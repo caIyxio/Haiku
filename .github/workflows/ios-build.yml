@@ -1,0 +1,29 @@
+name: iOS Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Build for iOS Simulator
+        run: |
+          xcodebuild \
+            -project Haiku.xcodeproj \
+            -scheme Haiku \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload simulator app
+        uses: actions/upload-artifact@v4
+        with:
+          name: Haiku-iOS-Simulator
+          path: build/Build/Products/Debug-iphonesimulator/Haiku.app
