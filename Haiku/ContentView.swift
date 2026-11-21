@@ -170,6 +170,18 @@ struct ContentView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 18)
+                    .onEnded { value in
+                        let beganAtLeadingEdge = value.startLocation.x <= 28
+                        if !isPhoneSidebarPresented && beganAtLeadingEdge && value.translation.width > 65 {
+                            isPhoneSidebarPresented = true
+                        } else if isPhoneSidebarPresented && value.translation.width < -65 {
+                            isPhoneSidebarPresented = false
+                        }
+                    }
+            )
             .animation(.easeInOut(duration: 0.22), value: isPhoneSidebarPresented)
         }
     }
@@ -178,7 +190,7 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("Haiku")
-                    .font(.system(size: 23, weight: .semibold, design: .rounded))
+                    .font(.system(size: 23, weight: .semibold, design: .serif))
                     .foregroundStyle(HaikuTheme.foreground)
                 Spacer()
                 Button {
@@ -255,7 +267,7 @@ struct ContentView: View {
     private var header: some View {
         ZStack {
             Text("Haiku")
-                .font(.system(size: 20, weight: .semibold, design: .rounded))
+                .font(.system(size: 22, weight: .semibold, design: .serif))
                 .frame(maxWidth: .infinity)
             HStack {
                 if horizontalSizeClass == .compact {
@@ -295,7 +307,7 @@ struct ContentView: View {
     }
 
     private var composer: some View {
-        HStack(alignment: .bottom, spacing: 10) {
+        HStack(alignment: .center, spacing: 8) {
             TextField("Message Haiku", text: $messageText, axis: .vertical)
                 .font(.system(size: 16))
                 .lineLimit(1...5)
@@ -309,14 +321,13 @@ struct ContentView: View {
                 Image(systemName: "arrow.up")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(HaikuTheme.surface)
-                    .frame(width: 34, height: 34)
+                    .frame(width: 40, height: 40)
                     .background(HaikuTheme.foreground, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
             .disabled(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             .opacity(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.45 : 1)
             .accessibilityLabel("Send message")
-            .padding(.trailing, 8)
-            .padding(.bottom, 6)
+            .padding(.trailing, 5)
         }
         .background {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -331,9 +342,9 @@ struct ContentView: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(HaikuTheme.foreground.opacity(0.08), lineWidth: 1)
         }
-        .padding(.horizontal, 18)
-        .padding(.top, 10)
-        .padding(.bottom, 10)
+        .padding(.leading, 13)
+        .padding(.trailing, 6)
+        .padding(.vertical, 6)
         .background(HaikuTheme.background)
     }
 
