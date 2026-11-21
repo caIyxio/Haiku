@@ -6,6 +6,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A10000000000000000000007 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = E10000000000000000000002 /* Supabase */; };
+		A10000000000000000000008 /* SupabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000007 /* SupabaseManager.swift */; };
+		A10000000000000000000009 /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000008 /* AccountView.swift */; };
 		A10000000000000000000001 /* HaikuApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000001 /* HaikuApp.swift */; };
 		A10000000000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000002 /* ContentView.swift */; };
 		A10000000000000000000003 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000003 /* Theme.swift */; };
@@ -14,6 +17,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		B10000000000000000000007 /* SupabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseManager.swift; sourceTree = "<group>"; };
+		B10000000000000000000008 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
 		B10000000000000000000001 /* HaikuApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HaikuApp.swift; sourceTree = "<group>"; };
 		B10000000000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		B10000000000000000000003 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -23,7 +28,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		C10000000000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		C10000000000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000007 /* Supabase in Frameworks */); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -34,7 +39,7 @@
 		};
 		D10000000000000000000002 /* Haiku */ = {
 			isa = PBXGroup;
-			children = (B10000000000000000000001, B10000000000000000000002, B10000000000000000000003, B10000000000000000000005);
+			children = (B10000000000000000000001, B10000000000000000000002, B10000000000000000000003, B10000000000000000000005, B10000000000000000000007, B10000000000000000000008);
 			path = Haiku;
 			sourceTree = "<group>";
 		};
@@ -57,6 +62,7 @@
 			productName = Haiku;
 			productReference = B20000000000000000000001;
 			productType = "com.apple.product-type.application";
+			packageProductDependencies = (E10000000000000000000002 /* Supabase */,);
 		};
 /* End PBXNativeTarget section */
 
@@ -73,6 +79,7 @@
 			productRefGroup = D10000000000000000000003;
 			projectDirPath = "";
 			projectRoot = "";
+			packageReferences = (E10000000000000000000003 /* XCRemoteSwiftPackageReference "supabase-swift" */,);
 			targets = (E10000000000000000000001);
 		};
 /* End PBXProject section */
@@ -81,7 +88,7 @@
 		C10000000000000000000002 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
-			files = (A10000000000000000000001, A10000000000000000000002, A10000000000000000000003);
+			files = (A10000000000000000000001, A10000000000000000000002, A10000000000000000000003, A10000000000000000000008, A10000000000000000000009);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
@@ -94,6 +101,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		E10000000000000000000003 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {isa = XCRemoteSwiftPackageReference; repositoryURL = "https://github.com/supabase/supabase-swift"; requirement = {kind = upToNextMajorVersion; minimumVersion = 2.0.0; }; };
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		E10000000000000000000002 /* Supabase */ = {isa = XCSwiftPackageProductDependency; package = E10000000000000000000003 /* XCRemoteSwiftPackageReference "supabase-swift" */; productName = Supabase; };
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		F20000000000000000000001 /* Project Debug */ = {
