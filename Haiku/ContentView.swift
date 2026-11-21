@@ -154,7 +154,7 @@ struct ContentView: View {
                     Color.black.opacity(0.22)
                         .ignoresSafeArea()
                         .onTapGesture {
-                            withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+                            withAnimation(.spring(duration: 0.38, bounce: 0.12)) {
                                 isPhoneSidebarPresented = false
                             }
                         }
@@ -178,17 +178,17 @@ struct ContentView: View {
                         let beganAtLeadingEdge = value.startLocation.x <= 28
                         if !isPhoneSidebarPresented && beganAtLeadingEdge && value.translation.width > 65 {
                             isComposerFocused = false
-                            withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+                            withAnimation(.spring(duration: 0.38, bounce: 0.12)) {
                                 isPhoneSidebarPresented = true
                             }
                         } else if isPhoneSidebarPresented && value.translation.width < -65 {
-                            withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+                            withAnimation(.spring(duration: 0.38, bounce: 0.12)) {
                                 isPhoneSidebarPresented = false
                             }
                         }
                     }
             )
-            .animation(.spring(response: 0.38, dampingFraction: 0.86), value: isPhoneSidebarPresented)
+            .animation(.spring(duration: 0.38, bounce: 0.12), value: isPhoneSidebarPresented)
         }
     }
 
@@ -200,7 +200,7 @@ struct ContentView: View {
                     .foregroundStyle(HaikuTheme.foreground)
                 Spacer()
                 Button {
-                    withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+                    withAnimation(.spring(duration: 0.38, bounce: 0.12)) {
                         isPhoneSidebarPresented = false
                     }
                 } label: {
@@ -220,7 +220,7 @@ struct ContentView: View {
                 messages.removeAll()
                 messageText = ""
                 selection = .chat
-                withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+                withAnimation(.spring(duration: 0.38, bounce: 0.12)) {
                     isPhoneSidebarPresented = false
                 }
             } label: {
@@ -251,7 +251,7 @@ struct ContentView: View {
 
             Button {
                 selection = .settings
-                withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+                withAnimation(.spring(duration: 0.38, bounce: 0.12)) {
                     isPhoneSidebarPresented = false
                 }
             } label: {
@@ -279,7 +279,7 @@ struct ContentView: View {
                 if horizontalSizeClass == .compact {
                     Button {
                         isComposerFocused = false
-                        withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+                        withAnimation(.spring(duration: 0.38, bounce: 0.12)) {
                             isPhoneSidebarPresented = true
                         }
                     } label: {
@@ -314,45 +314,56 @@ struct ContentView: View {
     }
 
     private var composer: some View {
-        HStack(alignment: .center, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             TextField("Message Haiku", text: $messageText, axis: .vertical)
                 .focused($isComposerFocused)
-                .font(.system(size: 16))
+                .font(.system(size: 17))
                 .lineLimit(1...5)
-                .padding(.vertical, 10)
-                .padding(.leading, 13)
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
                 .tint(HaikuTheme.accent)
                 .submitLabel(.send)
                 .onSubmit(sendMessage)
 
-            Button(action: sendMessage) {
-                Image(systemName: "arrow.up")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(HaikuTheme.surface)
-                    .frame(width: 40, height: 40)
-                    .background(HaikuTheme.foreground, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            HStack(spacing: 10) {
+                Text("Haiku 1.0")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(HaikuTheme.secondary)
+                    .padding(.horizontal, 13)
+                    .padding(.vertical, 8)
+                    .background(HaikuTheme.background.opacity(0.7), in: Capsule())
+
+                Spacer()
+
+                Button(action: sendMessage) {
+                    Image(systemName: "arrow.up")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(HaikuTheme.background)
+                        .frame(width: 34, height: 34)
+                        .background(HaikuTheme.foreground, in: Circle())
+                }
+                .disabled(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .opacity(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.42 : 1)
+                .accessibilityLabel("Send message")
             }
-            .disabled(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            .opacity(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.45 : 1)
-            .accessibilityLabel("Send message")
-            .padding(.trailing, 5)
+            .padding(.horizontal, 10)
+            .padding(.bottom, 10)
         }
         .background {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(.regularMaterial)
                 .environment(\.colorScheme, colorScheme)
                 .overlay {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(HaikuTheme.surface.opacity(0.48))
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .fill(HaikuTheme.surface.opacity(0.72))
                 }
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(HaikuTheme.foreground.opacity(0.08), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .strokeBorder(HaikuTheme.foreground.opacity(0.07), lineWidth: 1)
         }
-        .padding(.leading, 13)
-        .padding(.trailing, 6)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 17)
+        .padding(.vertical, 10)
         .background(HaikuTheme.background)
     }
 
