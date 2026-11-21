@@ -14,7 +14,8 @@ private enum HaikuDestination: Hashable {
 struct ContentView: View {
     @State private var isShowingSplash = true
     @State private var selection: HaikuDestination? = .chat
-    @State private var columnVisibility: NavigationSplitViewVisibility = .detailOnly
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @State private var isPhoneSidebarPresented = false
     @State private var messageText = ""
     @State private var messages: [ChatMessage] = []
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -27,19 +28,17 @@ struct ContentView: View {
                     .transition(.opacity)
             } else {
                 Group {
-                    NavigationSplitView(columnVisibility: $columnVisibility) {
-                        sidebar
-                    } detail: {
-                        detailView
-                    }
-                    .navigationSplitViewStyle(.balanced)
-                    .navigationSplitViewColumnWidth(min: 250, ideal: 280, max: 320)
-                    .tint(HaikuTheme.accent)
-                    .onAppear {
-                        columnVisibility = horizontalSizeClass == .regular ? .all : .detailOnly
-                    }
-                    .onChange(of: horizontalSizeClass) { _, sizeClass in
-                        columnVisibility = sizeClass == .regular ? .all : .detailOnly
+                    if horizontalSizeClass == .regular {
+                        NavigationSplitView(columnVisibility: $columnVisibility) {
+                            sidebar
+                        } detail: {
+                            detailView
+                        }
+                        .navigationSplitViewStyle(.balanced)
+                        .navigationSplitViewColumnWidth(min: 250, ideal: 280, max: 320)
+                        .tint(HaikuTheme.accent)
+                    } else {
+                        compactPhoneLayout
                     }
                 }
                 .transition(.opacity)
@@ -137,29 +136,150 @@ struct ContentView: View {
         .background(HaikuTheme.background.ignoresSafeArea())
     }
 
+    private var compactPhoneLayout: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                Group {
+                    switch selection {
+                    case .settings:
+                        settingsScreen
+                    case .chat, .none:
+                        chatScreen
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                if isPhoneSidebarPresented {
+                    Color.black.opacity(0.22)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.22)) {
+                                isPhoneSidebarPresented = false
+                            }
+                        }
+                        .transition(.opacity)
+                        .zIndex(1)
+
+                    phoneSidebar
+                        .frame(width: min(geometry.size.width * 0.84, 340))
+                        .frame(maxHeight: .infinity)
+                        .background(HaikuTheme.background.ignoresSafeArea())
+                        .shadow(color: .black.opacity(0.12), radius: 18, x: 8, y: 0)
+                        .transition(.move(edge: .leading))
+                        .zIndex(2)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .animation(.easeInOut(duration: 0.22), value: isPhoneSidebarPresented)
+        }
+    }
+
+    private var phoneSidebar: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Haiku")
+                    .font(.system(size: 23, weight: .semibold, design: .rounded))
+                    .foregroundStyle(HaikuTheme.foreground)
+                Spacer()
+                Button {
+                    withAnimation(.easeInOut(duration: 0.22)) {
+                        isPhoneSidebarPresented = false
+                    }
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(HaikuTheme.secondary)
+                        .frame(width: 36, height: 36)
+                        .background(HaikuTheme.surface, in: Circle())
+                }
+                .accessibilityLabel("Close sidebar")
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 12)
+            .padding(.bottom, 24)
+
+            Button {
+                messages.removeAll()
+                messageText = ""
+                selection = .chat
+                withAnimation(.easeInOut(duration: 0.22)) {
+                    isPhoneSidebarPresented = false
+                }
+            } label: {
+                Label("New chat", systemImage: "square.and.pencil")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(HaikuTheme.foreground)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 13)
+                    .background(HaikuTheme.surface, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 14)
+
+            Text("Recent")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(HaikuTheme.secondary)
+                .padding(.horizontal, 18)
+                .padding(.top, 28)
+                .padding(.bottom, 10)
+
+            Text("Your conversations will appear here.")
+                .font(.system(size: 14))
+                .foregroundStyle(HaikuTheme.secondary.opacity(0.8))
+                .padding(.horizontal, 18)
+
+            Spacer(minLength: 20)
+
+            Button {
+                selection = .settings
+                withAnimation(.easeInOut(duration: 0.22)) {
+                    isPhoneSidebarPresented = false
+                }
+            } label: {
+                Label("Settings", systemImage: "gearshape")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(HaikuTheme.foreground)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 13)
+                    .background(HaikuTheme.surface, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 14)
+            .padding(.bottom, 18)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
     private var header: some View {
         ZStack {
             Text("Haiku")
                 .font(.system(size: 20, weight: .semibold, design: .rounded))
                 .frame(maxWidth: .infinity)
             HStack {
-                Button {
-                    withAnimation(.easeInOut(duration: 0.22)) {
-                        columnVisibility = .all
+                if horizontalSizeClass == .compact {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.22)) {
+                            isPhoneSidebarPresented = true
+                        }
+                    } label: {
+                        Image(systemName: "line.3.horizontal")
+                            .font(.system(size: 20, weight: .regular))
+                            .frame(width: 40, height: 40)
+                            .contentShape(Rectangle())
                     }
-                } label: {
-                    Image(systemName: "sidebar.leading")
-                        .font(.system(size: 18, weight: .regular))
-                        .frame(width: 40, height: 40)
-                        .contentShape(Rectangle())
+                    .accessibilityLabel("Show sidebar")
+                } else {
+                    Color.clear.frame(width: 40, height: 40)
                 }
-                .accessibilityLabel("Show sidebar")
 
                 Spacer()
 
                 Button {
                     messages.removeAll()
                     messageText = ""
+                    selection = .chat
                 } label: {
                     Image(systemName: "square.and.pencil")
                         .font(.system(size: 18, weight: .regular))
