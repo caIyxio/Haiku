@@ -14,6 +14,7 @@ private enum HaikuDestination: Hashable {
 struct ContentView: View {
     @State private var isShowingSplash = true
     @State private var selection: HaikuDestination? = .chat
+    @State private var columnVisibility: NavigationSplitViewVisibility = .detailOnly
     @State private var messageText = ""
     @State private var messages: [ChatMessage] = []
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -26,17 +27,19 @@ struct ContentView: View {
                     .transition(.opacity)
             } else {
                 Group {
-                    if horizontalSizeClass == .regular {
-                        NavigationSplitView {
-                            sidebar
-                        } detail: {
-                            detailView
-                        }
-                        .navigationSplitViewStyle(.balanced)
-                        .navigationSplitViewColumnWidth(min: 250, ideal: 280, max: 320)
-                        .tint(HaikuTheme.accent)
-                    } else {
-                        chatScreen
+                    NavigationSplitView(columnVisibility: $columnVisibility) {
+                        sidebar
+                    } detail: {
+                        detailView
+                    }
+                    .navigationSplitViewStyle(.balanced)
+                    .navigationSplitViewColumnWidth(min: 250, ideal: 280, max: 320)
+                    .tint(HaikuTheme.accent)
+                    .onAppear {
+                        columnVisibility = horizontalSizeClass == .regular ? .all : .detailOnly
+                    }
+                    .onChange(of: horizontalSizeClass) { _, sizeClass in
+                        columnVisibility = sizeClass == .regular ? .all : .detailOnly
                     }
                 }
                 .transition(.opacity)
@@ -140,7 +143,20 @@ struct ContentView: View {
                 .font(.system(size: 20, weight: .semibold, design: .rounded))
                 .frame(maxWidth: .infinity)
             HStack {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.22)) {
+                        columnVisibility = .all
+                    }
+                } label: {
+                    Image(systemName: "sidebar.leading")
+                        .font(.system(size: 18, weight: .regular))
+                        .frame(width: 40, height: 40)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel("Show sidebar")
+
                 Spacer()
+
                 Button {
                     messages.removeAll()
                     messageText = ""
