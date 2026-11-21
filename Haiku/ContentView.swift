@@ -6,6 +6,29 @@ struct ChatMessage: Identifiable {
     let isUser: Bool
 }
 
+private struct HaikuModelOption: Identifiable {
+    let id: String
+    let name: String
+    let detail: String
+    let isPaid: Bool
+}
+
+private enum HaikuModelCatalog {
+    static let free = [
+        HaikuModelOption(id: "luna", name: "Luna", detail: "Balanced · everyday use", isPaid: false),
+        HaikuModelOption(id: "swift", name: "Swift", detail: "Fast · lightweight tasks", isPaid: false),
+        HaikuModelOption(id: "breeze", name: "Breeze", detail: "Concise · quick answers", isPaid: false)
+    ]
+
+    static let paid = [
+        HaikuModelOption(id: "atlas", name: "Atlas", detail: "Advanced reasoning", isPaid: true),
+        HaikuModelOption(id: "sage", name: "Sage", detail: "Writing · deep analysis", isPaid: true),
+        HaikuModelOption(id: "nova", name: "Nova", detail: "Experimental capabilities", isPaid: true)
+    ]
+
+    static let all = free + paid
+}
+
 private enum HaikuDestination: Hashable {
     case chat
     case settings
@@ -18,6 +41,7 @@ struct ContentView: View {
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var isPhoneSidebarPresented = false
     @State private var messageText = ""
+    @State private var selectedModelID = "luna"
     @State private var messages: [ChatMessage] = []
     @FocusState private var isComposerFocused: Bool
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -337,12 +361,42 @@ struct ContentView: View {
                 .onSubmit(sendMessage)
 
             HStack(spacing: 10) {
-                Text("Haiku 1.0")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(HaikuTheme.secondary)
+                Menu {
+                    Section("Free models") {
+                        ForEach(HaikuModelCatalog.free) { model in
+                            Button {
+                                selectedModelID = model.id
+                            } label: {
+                                if selectedModelID == model.id {
+                                    Label(model.name, systemImage: "checkmark")
+                                } else {
+                                    Text(model.name)
+                                }
+                            }
+                        }
+                    }
+
+                    Section("Paid plan") {
+                        ForEach(HaikuModelCatalog.paid) { model in
+                            Button {} label: {
+                                Label(model.name + " · " + model.detail, systemImage: "lock.fill")
+                            }
+                            .disabled(true)
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text("Haiku 1.0-" + (HaikuModelCatalog.all.first(where: { $0.id == selectedModelID })?.name ?? "Luna"))
+                            .font(.system(size: 13, weight: .medium))
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 10, weight: .semibold))
+                    }
+                    .foregroundStyle(HaikuTheme.foreground)
                     .padding(.horizontal, 13)
                     .padding(.vertical, 8)
                     .background(HaikuTheme.background.opacity(0.7), in: Capsule())
+                }
+                .accessibilityLabel("Choose Haiku model")
 
                 Spacer()
 
