@@ -4,19 +4,19 @@ import UIKit
 enum HaikuTheme {
     static let background = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.19, green: 0.18, blue: 0.16, alpha: 1.0)
+            ? UIColor(red: 0.10, green: 0.10, blue: 0.10, alpha: 1.0)
             : UIColor(red: 0.96, green: 0.95, blue: 0.91, alpha: 1.0)
     })
 
     static let surface = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.24, green: 0.23, blue: 0.20, alpha: 1.0)
-            : UIColor(red: 0.99, green: 0.98, blue: 0.95, alpha: 1.0)
+            ? UIColor(red: 0.19, green: 0.19, blue: 0.19, alpha: 1.0)
+            : UIColor(red: 0.99, green: 0.985, blue: 0.96, alpha: 1.0)
     })
 
     static let foreground = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.94, green: 0.91, blue: 0.84, alpha: 1.0)
+            ? UIColor(red: 0.91, green: 0.90, blue: 0.86, alpha: 1.0)
             : UIColor(red: 0.29, green: 0.25, blue: 0.20, alpha: 1.0)
     })
 
