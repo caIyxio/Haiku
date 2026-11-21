@@ -6,9 +6,15 @@ struct ChatMessage: Identifiable {
     let isUser: Bool
 }
 
+private enum HaikuDestination: Hashable {
+    case chat
+    case settings
+}
+
 struct ContentView: View {
     @State private var isShowingSplash = true
     @State private var columnVisibility: NavigationSplitViewVisibility = .detailOnly
+    @State private var selection: HaikuDestination? = .chat
     @State private var messageText = ""
     @State private var messages: [ChatMessage] = []
 
@@ -22,7 +28,7 @@ struct ContentView: View {
                 NavigationSplitView(columnVisibility: $columnVisibility) {
                     sidebar
                 } detail: {
-                    chatScreen
+                    detailView
                 }
                 .navigationSplitViewStyle(.balanced)
                 .tint(HaikuTheme.accent)
@@ -39,22 +45,29 @@ struct ContentView: View {
     }
 
     private var sidebar: some View {
-        List {
-            Button {
-                messages.removeAll()
-                columnVisibility = .detailOnly
-            } label: {
-                Label("New chat", systemImage: "square.and.pencil")
+        List(selection: $selection) {
+            Section {
+                NavigationLink(value: HaikuDestination.chat) {
+                    Label("New chat", systemImage: "square.and.pencil")
+                }
+                .simultaneousGesture(TapGesture().onEnded {
+                    messages.removeAll()
+                    messageText = ""
+                })
             }
 
             Section("Recent") {
                 Text("Your conversations will appear here.")
-                    .foregroundStyle(HaikuTheme.secondary)
                     .font(.footnote)
+                    .foregroundStyle(HaikuTheme.secondary)
+                    .listRowBackground(Color.clear)
+                    .selectionDisabled()
             }
 
             Section {
-                Label("Settings", systemImage: "gearshape")
+                NavigationLink(value: HaikuDestination.settings) {
+                    Label("Settings", systemImage: "gearshape")
+                }
             }
         }
         .listStyle(.sidebar)
@@ -62,6 +75,38 @@ struct ContentView: View {
         .background(HaikuTheme.background)
         .navigationTitle("Haiku")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    @ViewBuilder
+    private var detailView: some View {
+        switch selection {
+        case .settings:
+            settingsScreen
+        case .chat, .none:
+            chatScreen
+        }
+    }
+
+    private var settingsScreen: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Settings")
+                .font(.system(size: 28, weight: .semibold))
+            Text("Settings will be available in a future build.")
+                .font(.system(size: 15))
+                .foregroundStyle(HaikuTheme.secondary)
+            Spacer()
+        }
+        .padding(22)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .foregroundStyle(HaikuTheme.foreground)
+        .background(HaikuTheme.background.ignoresSafeArea())
+        .navigationTitle("Settings")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                sidebarButton
+            }
+        }
     }
 
     private var chatScreen: some View {
@@ -85,14 +130,18 @@ struct ContentView: View {
         .background(HaikuTheme.background.ignoresSafeArea())
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    columnVisibility = .all
-                } label: {
-                    Image(systemName: "sidebar.left")
-                }
-                .accessibilityLabel("Show sidebar")
+                sidebarButton
             }
         }
+    }
+
+    private var sidebarButton: some View {
+        Button {
+            columnVisibility = .all
+        } label: {
+            Image(systemName: "sidebar.left")
+        }
+        .accessibilityLabel("Show sidebar")
     }
 
     private var header: some View {
@@ -103,6 +152,7 @@ struct ContentView: View {
             Spacer()
             Button {
                 messages.removeAll()
+                messageText = ""
             } label: {
                 Image(systemName: "square.and.pencil")
                     .font(.system(size: 18, weight: .regular))
