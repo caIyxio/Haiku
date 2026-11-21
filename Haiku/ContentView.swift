@@ -13,6 +13,7 @@ private enum HaikuDestination: Hashable {
 
 struct ContentView: View {
     @State private var isShowingSplash = true
+    @StateObject private var auth = HaikuAuthStore()
     @State private var selection: HaikuDestination? = .chat
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var isPhoneSidebarPresented = false
@@ -26,6 +27,9 @@ struct ContentView: View {
             if isShowingSplash {
                 HaikuTheme.background
                     .ignoresSafeArea()
+                    .transition(.opacity)
+            } else if auth.session == nil {
+                HaikuAccountView(auth: auth)
                     .transition(.opacity)
             } else {
                 Group {
@@ -47,6 +51,7 @@ struct ContentView: View {
         }
         .preferredColorScheme(nil)
         .task {
+            Task { await auth.observeSession() }
             try? await Task.sleep(for: .milliseconds(650))
             withAnimation(.easeInOut(duration: 0.45)) {
                 isShowingSplash = false
@@ -103,9 +108,15 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Settings")
                 .font(.system(size: 28, weight: .semibold))
-            Text("Settings will be available in a future build.")
-                .font(.system(size: 15))
-                .foregroundStyle(HaikuTheme.secondary)
+            if let email = auth.session?.user.email {
+                Text(email)
+                    .font(.system(size: 15))
+                    .foregroundStyle(HaikuTheme.secondary)
+            }
+            Button("Sign out", role: .destructive) {
+                Task { await auth.signOut() }
+            }
+            .padding(.top, 8)
             Spacer()
         }
         .padding(22)
