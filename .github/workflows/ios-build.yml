@@ -1,4 +1,4 @@
-name: iOS Build
+name: iOS IPA Build
 
 on:
   workflow_dispatch:
@@ -12,18 +12,25 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Build for iOS Simulator
+      - name: Build unsigned iOS device app
         run: |
           xcodebuild \
             -project Haiku.xcodeproj \
             -scheme Haiku \
-            -sdk iphonesimulator \
-            -configuration Debug \
+            -sdk iphoneos \
+            -configuration Release \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO
 
-      - name: Upload simulator app
+      - name: Package unsigned IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/Haiku.app Payload/Haiku.app
+          /usr/bin/zip -qry Haiku.ipa Payload
+
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: Haiku-iOS-Simulator
-          path: build/Build/Products/Debug-iphonesimulator/Haiku.app
+          name: Haiku-iOS-IPA
+          path: Haiku.ipa
+          if-no-files-found: error
