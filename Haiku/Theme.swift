@@ -5,13 +5,13 @@ enum HaikuTheme {
     static let background = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.34, green: 0.27, blue: 0.21, alpha: 1.0)
-            : UIColor(red: 0.93, green: 0.88, blue: 0.80, alpha: 1.0)
+            : UIColor(red: 0.97, green: 0.94, blue: 0.88, alpha: 1.0)
     })
 
     static let surface = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.40, green: 0.32, blue: 0.25, alpha: 1.0)
-            : UIColor(red: 0.97, green: 0.93, blue: 0.87, alpha: 1.0)
+            : UIColor(red: 0.99, green: 0.97, blue: 0.93, alpha: 1.0)
     })
 
     static let foreground = Color(uiColor: UIColor { traits in
