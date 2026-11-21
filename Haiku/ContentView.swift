@@ -8,29 +8,25 @@ struct ChatMessage: Identifiable {
 
 struct ContentView: View {
     @State private var isShowingSplash = true
-    @State private var isSidebarOpen = false
+    @State private var columnVisibility: NavigationSplitViewVisibility = .detailOnly
     @State private var messageText = ""
     @State private var messages: [ChatMessage] = []
 
     var body: some View {
-        ZStack {
-            HaikuTheme.background.ignoresSafeArea()
-
+        Group {
             if isShowingSplash {
-                // Intentionally blank. The launch experience uses the same
-                // background as the chat so the transition feels seamless.
                 HaikuTheme.background
                     .ignoresSafeArea()
                     .transition(.opacity)
             } else {
-                chatScreen
-                    .transition(.opacity)
-            }
-
-            if isSidebarOpen && !isShowingSplash {
-                SidebarView(isOpen: $isSidebarOpen)
-                    .transition(.opacity)
-                    .zIndex(2)
+                NavigationSplitView(columnVisibility: $columnVisibility) {
+                    sidebar
+                } detail: {
+                    chatScreen
+                }
+                .navigationSplitViewStyle(.balanced)
+                .tint(HaikuTheme.accent)
+                .transition(.opacity)
             }
         }
         .preferredColorScheme(nil)
@@ -40,6 +36,32 @@ struct ContentView: View {
                 isShowingSplash = false
             }
         }
+    }
+
+    private var sidebar: some View {
+        List {
+            Button {
+                messages.removeAll()
+                columnVisibility = .detailOnly
+            } label: {
+                Label("New chat", systemImage: "square.and.pencil")
+            }
+
+            Section("Recent") {
+                Text("Your conversations will appear here.")
+                    .foregroundStyle(HaikuTheme.secondary)
+                    .font(.footnote)
+            }
+
+            Section {
+                Label("Settings", systemImage: "gearshape")
+            }
+        }
+        .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
+        .background(HaikuTheme.background)
+        .navigationTitle("Haiku")
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     private var chatScreen: some View {
@@ -60,29 +82,25 @@ struct ContentView: View {
             composer
         }
         .foregroundStyle(HaikuTheme.foreground)
+        .background(HaikuTheme.background.ignoresSafeArea())
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    columnVisibility = .all
+                } label: {
+                    Image(systemName: "sidebar.left")
+                }
+                .accessibilityLabel("Show sidebar")
+            }
+        }
     }
 
     private var header: some View {
         HStack {
-            Button {
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    isSidebarOpen = true
-                }
-            } label: {
-                Image(systemName: "line.3.horizontal")
-                    .font(.system(size: 19, weight: .medium))
-                    .frame(width: 42, height: 42)
-                    .contentShape(Rectangle())
-            }
-            .accessibilityLabel("Open sidebar")
-
             Spacer()
-
             Text("Haiku")
                 .font(.system(size: 17, weight: .semibold, design: .rounded))
-
             Spacer()
-
             Button {
                 messages.removeAll()
             } label: {
@@ -123,16 +141,16 @@ struct ContentView: View {
             .padding(.bottom, 6)
         }
         .background {
-            RoundedRectangle(cornerRadius: 25, style: .continuous)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(.regularMaterial)
                 .environment(\.colorScheme, colorScheme)
                 .overlay {
-                    RoundedRectangle(cornerRadius: 25, style: .continuous)
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .fill(HaikuTheme.surface.opacity(0.48))
                 }
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 25, style: .continuous)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .strokeBorder(HaikuTheme.foreground.opacity(0.08), lineWidth: 1)
         }
         .padding(.horizontal, 16)
