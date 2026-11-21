@@ -13,7 +13,6 @@ private enum HaikuDestination: Hashable {
 
 struct ContentView: View {
     @State private var isShowingSplash = true
-    @State private var columnVisibility: NavigationSplitViewVisibility = .detailOnly
     @State private var selection: HaikuDestination? = .chat
     @State private var messageText = ""
     @State private var messages: [ChatMessage] = []
@@ -25,12 +24,13 @@ struct ContentView: View {
                     .ignoresSafeArea()
                     .transition(.opacity)
             } else {
-                NavigationSplitView(columnVisibility: $columnVisibility) {
+                NavigationSplitView {
                     sidebar
                 } detail: {
                     detailView
                 }
                 .navigationSplitViewStyle(.balanced)
+                .navigationSplitViewColumnWidth(min: 250, ideal: 280, max: 320)
                 .tint(HaikuTheme.accent)
                 .transition(.opacity)
             }
@@ -102,11 +102,6 @@ struct ContentView: View {
         .background(HaikuTheme.background.ignoresSafeArea())
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                sidebarButton
-            }
-        }
     }
 
     private var chatScreen: some View {
@@ -128,20 +123,6 @@ struct ContentView: View {
         }
         .foregroundStyle(HaikuTheme.foreground)
         .background(HaikuTheme.background.ignoresSafeArea())
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                sidebarButton
-            }
-        }
-    }
-
-    private var sidebarButton: some View {
-        Button {
-            columnVisibility = .all
-        } label: {
-            Image(systemName: "sidebar.left")
-        }
-        .accessibilityLabel("Show sidebar")
     }
 
     private var header: some View {
