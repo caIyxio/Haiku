@@ -16,6 +16,7 @@ struct ContentView: View {
     @State private var selection: HaikuDestination? = .chat
     @State private var messageText = ""
     @State private var messages: [ChatMessage] = []
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
         Group {
@@ -24,14 +25,20 @@ struct ContentView: View {
                     .ignoresSafeArea()
                     .transition(.opacity)
             } else {
-                NavigationSplitView {
-                    sidebar
-                } detail: {
-                    detailView
+                Group {
+                    if horizontalSizeClass == .regular {
+                        NavigationSplitView {
+                            sidebar
+                        } detail: {
+                            detailView
+                        }
+                        .navigationSplitViewStyle(.balanced)
+                        .navigationSplitViewColumnWidth(min: 250, ideal: 280, max: 320)
+                        .tint(HaikuTheme.accent)
+                    } else {
+                        chatScreen
+                    }
                 }
-                .navigationSplitViewStyle(.balanced)
-                .navigationSplitViewColumnWidth(min: 250, ideal: 280, max: 320)
-                .tint(HaikuTheme.accent)
                 .transition(.opacity)
             }
         }
@@ -50,6 +57,7 @@ struct ContentView: View {
                 NavigationLink(value: HaikuDestination.chat) {
                     Label("New chat", systemImage: "square.and.pencil")
                 }
+                .listRowBackground(Color.clear)
                 .simultaneousGesture(TapGesture().onEnded {
                     messages.removeAll()
                     messageText = ""
@@ -68,6 +76,7 @@ struct ContentView: View {
                 NavigationLink(value: HaikuDestination.settings) {
                     Label("Settings", systemImage: "gearshape")
                 }
+                .listRowBackground(Color.clear)
             }
         }
         .listStyle(.sidebar)
@@ -126,24 +135,26 @@ struct ContentView: View {
     }
 
     private var header: some View {
-        HStack {
-            Spacer()
+        ZStack {
             Text("Haiku")
-                .font(.system(size: 17, weight: .semibold, design: .rounded))
-            Spacer()
-            Button {
-                messages.removeAll()
-                messageText = ""
-            } label: {
-                Image(systemName: "square.and.pencil")
-                    .font(.system(size: 18, weight: .regular))
-                    .frame(width: 42, height: 42)
-                    .contentShape(Rectangle())
+                .font(.system(size: 20, weight: .semibold, design: .rounded))
+                .frame(maxWidth: .infinity)
+            HStack {
+                Spacer()
+                Button {
+                    messages.removeAll()
+                    messageText = ""
+                } label: {
+                    Image(systemName: "square.and.pencil")
+                        .font(.system(size: 18, weight: .regular))
+                        .frame(width: 40, height: 40)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel("New chat")
             }
-            .accessibilityLabel("New chat")
         }
-        .padding(.horizontal, 12)
-        .padding(.top, 6)
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
         .foregroundStyle(HaikuTheme.foreground)
     }
 
@@ -152,8 +163,8 @@ struct ContentView: View {
             TextField("Message Haiku", text: $messageText, axis: .vertical)
                 .font(.system(size: 16))
                 .lineLimit(1...5)
-                .padding(.vertical, 12)
-                .padding(.leading, 15)
+                .padding(.vertical, 10)
+                .padding(.leading, 13)
                 .tint(HaikuTheme.accent)
                 .submitLabel(.send)
                 .onSubmit(sendMessage)
@@ -163,7 +174,7 @@ struct ContentView: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(HaikuTheme.surface)
                     .frame(width: 34, height: 34)
-                    .background(HaikuTheme.foreground, in: Circle())
+                    .background(HaikuTheme.foreground, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
             .disabled(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             .opacity(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.45 : 1)
@@ -172,19 +183,19 @@ struct ContentView: View {
             .padding(.bottom, 6)
         }
         .background {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(.regularMaterial)
                 .environment(\.colorScheme, colorScheme)
                 .overlay {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .fill(HaikuTheme.surface.opacity(0.48))
                 }
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(HaikuTheme.foreground.opacity(0.08), lineWidth: 1)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 18)
         .padding(.top, 10)
         .padding(.bottom, 10)
         .background(HaikuTheme.background)
@@ -202,7 +213,7 @@ struct ContentView: View {
                 .padding(.vertical, 11)
                 .background(
                     message.isUser ? HaikuTheme.surface : Color.clear,
-                    in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                 )
 
             if !message.isUser { Spacer(minLength: 44) }
