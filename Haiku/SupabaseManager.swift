@@ -22,7 +22,7 @@ final class HaikuAuthStore: ObservableObject {
     func signIn(email: String, password: String) async {
         await perform {
             let response = try await client.auth.signIn(email: email, password: password)
-            session = response.session
+            session = response
         }
     }
 
