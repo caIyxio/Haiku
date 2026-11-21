@@ -18,6 +18,7 @@ struct ContentView: View {
     @State private var isPhoneSidebarPresented = false
     @State private var messageText = ""
     @State private var messages: [ChatMessage] = []
+    @FocusState private var isComposerFocused: Bool
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
@@ -153,7 +154,7 @@ struct ContentView: View {
                     Color.black.opacity(0.22)
                         .ignoresSafeArea()
                         .onTapGesture {
-                            withAnimation(.easeInOut(duration: 0.22)) {
+                            withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
                                 isPhoneSidebarPresented = false
                             }
                         }
@@ -176,13 +177,18 @@ struct ContentView: View {
                     .onEnded { value in
                         let beganAtLeadingEdge = value.startLocation.x <= 28
                         if !isPhoneSidebarPresented && beganAtLeadingEdge && value.translation.width > 65 {
-                            isPhoneSidebarPresented = true
+                            isComposerFocused = false
+                            withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+                                isPhoneSidebarPresented = true
+                            }
                         } else if isPhoneSidebarPresented && value.translation.width < -65 {
-                            isPhoneSidebarPresented = false
+                            withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+                                isPhoneSidebarPresented = false
+                            }
                         }
                     }
             )
-            .animation(.easeInOut(duration: 0.22), value: isPhoneSidebarPresented)
+            .animation(.spring(response: 0.38, dampingFraction: 0.86), value: isPhoneSidebarPresented)
         }
     }
 
@@ -194,7 +200,7 @@ struct ContentView: View {
                     .foregroundStyle(HaikuTheme.foreground)
                 Spacer()
                 Button {
-                    withAnimation(.easeInOut(duration: 0.22)) {
+                    withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
                         isPhoneSidebarPresented = false
                     }
                 } label: {
@@ -214,7 +220,7 @@ struct ContentView: View {
                 messages.removeAll()
                 messageText = ""
                 selection = .chat
-                withAnimation(.easeInOut(duration: 0.22)) {
+                withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
                     isPhoneSidebarPresented = false
                 }
             } label: {
@@ -245,7 +251,7 @@ struct ContentView: View {
 
             Button {
                 selection = .settings
-                withAnimation(.easeInOut(duration: 0.22)) {
+                withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
                     isPhoneSidebarPresented = false
                 }
             } label: {
@@ -272,7 +278,8 @@ struct ContentView: View {
             HStack {
                 if horizontalSizeClass == .compact {
                     Button {
-                        withAnimation(.easeInOut(duration: 0.22)) {
+                        isComposerFocused = false
+                        withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
                             isPhoneSidebarPresented = true
                         }
                     } label: {
@@ -309,6 +316,7 @@ struct ContentView: View {
     private var composer: some View {
         HStack(alignment: .center, spacing: 8) {
             TextField("Message Haiku", text: $messageText, axis: .vertical)
+                .focused($isComposerFocused)
                 .font(.system(size: 16))
                 .lineLimit(1...5)
                 .padding(.vertical, 10)
