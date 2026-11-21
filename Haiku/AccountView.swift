@@ -54,7 +54,7 @@ struct HaikuAccountView: View {
                 }
                 .disabled(auth.isLoading || email.isEmpty || password.count < 6)
 
-                Button(isCreatingAccount ? "Already have an account? Sign in" : "Use your Carbyne account") {
+                Button(isCreatingAccount ? "Already have an account? Sign in" : "Create a Carbyne account") {
                     isCreatingAccount.toggle()
                     auth.errorMessage = nil
                 }
