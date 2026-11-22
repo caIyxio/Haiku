@@ -64,6 +64,7 @@ struct ContentView: View {
                 .transition(.opacity)
             }
         }
+        .background(HaikuTheme.background.ignoresSafeArea())
         .preferredColorScheme(nil)
         .task {
             Task { await auth.observeSession() }
@@ -389,6 +390,8 @@ private struct NativeChatSidebarHost: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UISplitViewController {
         let split = UISplitViewController(style: .doubleColumn)
         split.delegate = context.coordinator
+        split.view.backgroundColor = HaikuTheme.uiBackground
+        split.view.isOpaque = true
         split.presentsWithGesture = true
         split.displayModeButtonVisibility = .never
         configure(split)
