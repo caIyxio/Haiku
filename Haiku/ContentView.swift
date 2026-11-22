@@ -35,7 +35,6 @@ struct ContentView: View {
     @StateObject private var auth = HaikuAuthStore()
     @State private var selection: HaikuDestination? = .chat
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
-    @State private var isPhoneSidebarPresented = false
     @State private var messageText = ""
     @State private var selectedModelID = "luna"
     @State private var messages: [ChatMessage] = []
@@ -54,20 +53,14 @@ struct ContentView: View {
                 HaikuAccountView(auth: auth)
                     .transition(.opacity)
             } else {
-                Group {
-                    if horizontalSizeClass == .regular {
-                        NavigationSplitView(columnVisibility: $columnVisibility) {
-                            sidebar
-                        } detail: {
-                            detailView
-                        }
-                        .navigationSplitViewStyle(.balanced)
-                        .navigationSplitViewColumnWidth(min: 250, ideal: 280, max: 320)
-                        .tint(HaikuTheme.accent)
-                    } else {
-                        compactPhoneLayout
-                    }
+                NavigationSplitView(columnVisibility: $columnVisibility) {
+                    sidebar
+                } detail: {
+                    detailView
                 }
+                .navigationSplitViewStyle(.balanced)
+                .navigationSplitViewColumnWidth(min: 250, ideal: 280, max: 320)
+                .tint(HaikuTheme.accent)
                 .transition(.opacity)
             }
         }
@@ -82,98 +75,56 @@ struct ContentView: View {
     }
 
     private var sidebar: some View {
-        sidebarContents(showCloseButton: false)
-    }
-
-    private func sidebarContents(showCloseButton: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 12) {
-                Text("Haiku")
-                    .font(.system(size: 25, weight: .semibold, design: .serif))
-                    .foregroundStyle(HaikuTheme.foreground)
-
-                Spacer()
-
-                if showCloseButton {
-                    Button {
-                        withAnimation(.spring(duration: 0.38, bounce: 0.12)) {
-                            isPhoneSidebarPresented = false
-                        }
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(HaikuTheme.secondary)
-                            .frame(width: 36, height: 36)
-                            .background(HaikuTheme.surface, in: Circle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Close sidebar")
+        List(selection: $selection) {
+            Section {
+                NavigationLink(value: HaikuDestination.chat) {
+                    Label("New chat", systemImage: "square.and.pencil")
                 }
+                .simultaneousGesture(TapGesture().onEnded {
+                    messages.removeAll()
+                    messageText = ""
+                })
             }
-            .padding(.horizontal, 20)
-            .padding(.top, showCloseButton ? 12 : 24)
-            .padding(.bottom, 24)
 
-            Divider()
-                .overlay(HaikuTheme.foreground.opacity(0.12))
-                .padding(.horizontal, 20)
-
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Recent")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(HaikuTheme.secondary)
-
+            Section("Recent") {
                 Text("Your conversations will appear here.")
-                    .font(.system(size: 14))
-                    .foregroundStyle(HaikuTheme.secondary.opacity(0.82))
+                    .font(.footnote)
+                    .foregroundStyle(HaikuTheme.secondary)
+                    .selectionDisabled()
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 22)
-
-            Spacer(minLength: 24)
-
+        }
+        .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
+        .background(HaikuTheme.background)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
             HStack(spacing: 12) {
                 Button {
                     messages.removeAll()
                     messageText = ""
                     selection = .chat
-                    if showCloseButton {
-                        withAnimation(.spring(duration: 0.38, bounce: 0.12)) {
-                            isPhoneSidebarPresented = false
-                        }
-                    }
                 } label: {
                     Label("Chat", systemImage: "square.and.pencil")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(HaikuTheme.background)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 15)
-                        .background(HaikuTheme.accent, in: Capsule())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderedProminent)
 
                 Button {
                     selection = .settings
-                    if showCloseButton {
-                        withAnimation(.spring(duration: 0.38, bounce: 0.12)) {
-                            isPhoneSidebarPresented = false
-                        }
-                    }
                 } label: {
                     Image(systemName: "person.crop.circle")
-                        .font(.system(size: 25, weight: .regular))
-                        .foregroundStyle(HaikuTheme.foreground)
-                        .frame(width: 48, height: 48)
-                        .background(HaikuTheme.surface, in: Circle())
+                        .font(.system(size: 23))
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Account and settings")
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 18)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(.bar)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(HaikuTheme.background)
+        .navigationTitle("Haiku")
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     @ViewBuilder
@@ -230,102 +181,23 @@ struct ContentView: View {
         .background(HaikuTheme.background.ignoresSafeArea())
     }
 
-    private var compactPhoneLayout: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .leading) {
-                Group {
-                    switch selection {
-                    case .settings:
-                        settingsScreen
-                    case .chat, .none:
-                        chatScreen
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                if isPhoneSidebarPresented {
-                    Color.black.opacity(0.22)
-                        .ignoresSafeArea()
-                        .onTapGesture {
-                            withAnimation(.spring(duration: 0.38, bounce: 0.12)) {
-                                isPhoneSidebarPresented = false
-                            }
-                        }
-                        .transition(.opacity)
-                        .zIndex(1)
-
-                    phoneSidebar
-                        .frame(width: min(geometry.size.width * 0.84, 340))
-                        .frame(maxHeight: .infinity)
-                        .background(HaikuTheme.background.ignoresSafeArea())
-                        .shadow(color: .black.opacity(0.12), radius: 18, x: 8, y: 0)
-                        .transition(.move(edge: .leading))
-                        .zIndex(2)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .contentShape(Rectangle())
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 18)
-                    .onEnded { value in
-                        let beganAtLeadingEdge = value.startLocation.x <= 28
-                        if !isPhoneSidebarPresented && beganAtLeadingEdge && value.translation.width > 65 {
-                            isComposerFocused = false
-                            withAnimation(.spring(duration: 0.38, bounce: 0.12)) {
-                                isPhoneSidebarPresented = true
-                            }
-                        } else if isPhoneSidebarPresented && value.translation.width < -65 {
-                            withAnimation(.spring(duration: 0.38, bounce: 0.12)) {
-                                isPhoneSidebarPresented = false
-                            }
-                        }
-                    }
-            )
-            .animation(.spring(duration: 0.38, bounce: 0.12), value: isPhoneSidebarPresented)
-        }
-    }
-
-    private var phoneSidebar: some View {
-        sidebarContents(showCloseButton: true)
-    }
-
     private var header: some View {
-        ZStack {
+        HStack {
             Text("Haiku")
                 .font(.system(size: 22, weight: .semibold, design: .serif))
                 .frame(maxWidth: .infinity)
-            HStack {
-                if horizontalSizeClass == .compact {
-                    Button {
-                        isComposerFocused = false
-                        withAnimation(.spring(duration: 0.38, bounce: 0.12)) {
-                            isPhoneSidebarPresented = true
-                        }
-                    } label: {
-                        Image(systemName: "line.3.horizontal")
-                            .font(.system(size: 20, weight: .regular))
-                            .frame(width: 40, height: 40)
-                            .contentShape(Rectangle())
-                    }
-                    .accessibilityLabel("Show sidebar")
-                } else {
-                    Color.clear.frame(width: 40, height: 40)
-                }
 
-                Spacer()
-
-                Button {
-                    messages.removeAll()
-                    messageText = ""
-                    selection = .chat
-                } label: {
-                    Image(systemName: "square.and.pencil")
-                        .font(.system(size: 18, weight: .regular))
-                        .frame(width: 40, height: 40)
-                        .contentShape(Rectangle())
-                }
-                .accessibilityLabel("New chat")
+            Button {
+                messages.removeAll()
+                messageText = ""
+                selection = .chat
+            } label: {
+                Image(systemName: "square.and.pencil")
+                    .font(.system(size: 18, weight: .regular))
+                    .frame(width: 40, height: 40)
+                    .contentShape(Rectangle())
             }
+            .accessibilityLabel("New chat")
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
