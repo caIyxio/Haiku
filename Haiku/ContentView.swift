@@ -54,22 +54,12 @@ struct ContentView: View {
                 HaikuAccountView(auth: auth)
                     .transition(.opacity)
             } else {
-                Group {
-                    if horizontalSizeClass == .regular {
-                        NativeChatSidebarHost(
-                            sidebar: AnyView(sidebar),
-                            detail: AnyView(detailView(onToggleSidebar: { isSidebarVisible = true })),
-                            isRegularWidth: true,
-                            isSidebarVisible: $isSidebarVisible
-                        )
-                    } else {
-                        CompactChatSidebarOverlay(
-                            sidebar: AnyView(sidebar),
-                            detail: AnyView(detailView(onToggleSidebar: { isSidebarVisible = true })),
-                            isSidebarVisible: $isSidebarVisible
-                        )
-                    }
-                }
+                NativeChatSidebarHost(
+                    sidebar: AnyView(sidebar),
+                    detail: AnyView(detailView(onToggleSidebar: { isSidebarVisible = true })),
+                    isRegularWidth: horizontalSizeClass == .regular,
+                    isSidebarVisible: $isSidebarVisible
+                )
                 .tint(HaikuTheme.accent)
                 .transition(.opacity)
             }
@@ -394,77 +384,6 @@ struct ContentView: View {
 }
 
 
-/// Compact iPhone presentation: keep the live chat underneath and slide the drawer over it.
-private struct CompactChatSidebarOverlay: View {
-    let sidebar: AnyView
-    let detail: AnyView
-    @Binding var isSidebarVisible: Bool
-
-    var body: some View {
-        GeometryReader { proxy in
-            let drawerWidth = proxy.size.width * 0.80
-
-            ZStack(alignment: .leading) {
-                detail
-                    .frame(width: proxy.size.width, height: proxy.size.height)
-                    .overlay {
-                        if isSidebarVisible {
-                            Color.black.opacity(0.34)
-                                .contentShape(Rectangle())
-                                .onTapGesture { closeSidebar() }
-                        }
-                    }
-                    .clipShape(
-                        UnevenRoundedRectangle(
-                            topLeadingRadius: isSidebarVisible ? 28 : 0,
-                            bottomLeadingRadius: isSidebarVisible ? 28 : 0,
-                            style: .continuous
-                        )
-                    )
-                    .offset(x: isSidebarVisible ? drawerWidth : 0)
-
-                if isSidebarVisible {
-                    sidebar
-                        .frame(width: drawerWidth, height: proxy.size.height)
-                        .background(HaikuTheme.background.ignoresSafeArea())
-                        .clipShape(
-                            UnevenRoundedRectangle(
-                                bottomTrailingRadius: 26,
-                                topTrailingRadius: 26,
-                                style: .continuous
-                            )
-                        )
-                        .transition(.move(edge: .leading))
-                        .zIndex(2)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(HaikuTheme.background.ignoresSafeArea())
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 18)
-                    .onEnded { value in
-                        if !isSidebarVisible && value.startLocation.x < 28 && value.translation.width > 70 {
-                            openSidebar()
-                        } else if isSidebarVisible && value.translation.width < -70 {
-                            closeSidebar()
-                        }
-                    }
-            )
-            .animation(.spring(response: 0.38, dampingFraction: 0.90), value: isSidebarVisible)
-        }
-        .ignoresSafeArea()
-    }
-
-    private func openSidebar() {
-        isSidebarVisible = true
-    }
-
-    private func closeSidebar() {
-        isSidebarVisible = false
-    }
-}
-
 /// UIKit owns the real system sidebar, including its edge-swipe gesture.
 private struct NativeChatSidebarHost: UIViewControllerRepresentable {
     let sidebar: AnyView
@@ -518,7 +437,9 @@ private struct NativeChatSidebarHost: UIViewControllerRepresentable {
 
     private func configure(_ split: UISplitViewController) {
         split.preferredSplitBehavior = isRegularWidth ? .tile : .overlay
-        split.preferredDisplayMode = isRegularWidth ? .oneBesideSecondary : .secondaryOnly
+        split.preferredDisplayMode = isRegularWidth
+            ? .oneBesideSecondary
+            : (isSidebarVisible ? .oneOverSecondary : .secondaryOnly)
         split.presentsWithGesture = true
         split.displayModeButtonVisibility = .never
         split.preferredPrimaryColumnWidth = 320
@@ -538,8 +459,7 @@ private struct NativeChatSidebarHost: UIViewControllerRepresentable {
         var lastRequestedVisibility = false
 
         func splitViewControllerDidChangeDisplayMode(_ svc: UISplitViewController) {
-            guard !svc.isCollapsed, svc.splitBehavior == .overlay else { return }
-            let visible = svc.displayMode == .oneOverSecondary
+            let visible = svc.displayMode == .oneOverSecondary || svc.displayMode == .oneBesideSecondary
             lastRequestedVisibility = visible
             visibility?.wrappedValue = visible
         }
