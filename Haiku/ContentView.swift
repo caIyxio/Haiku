@@ -54,12 +54,24 @@ struct ContentView: View {
                 HaikuAccountView(auth: auth)
                     .transition(.opacity)
             } else {
-                ChatDrawerHost(
-                    sidebar: AnyView(sidebar),
-                    detail: AnyView(detailView),
-                    isSidebarVisible: $isSidebarVisible,
-                    dismissKeyboard: { isComposerFocused = false }
-                )
+                Group {
+                    if horizontalSizeClass == .regular {
+                        NavigationSplitView {
+                            sidebar
+                                .navigationSplitViewColumnWidth(min: 240, ideal: 280, max: 340)
+                        } detail: {
+                            detailView
+                        }
+                        .navigationSplitViewStyle(.balanced)
+                    } else {
+                        ChatDrawerHost(
+                            sidebar: AnyView(sidebar),
+                            detail: AnyView(detailView),
+                            isSidebarVisible: $isSidebarVisible,
+                            dismissKeyboard: { isComposerFocused = false }
+                        )
+                    }
+                }
                 .tint(HaikuTheme.accent)
                 .transition(.opacity)
             }
@@ -394,6 +406,7 @@ private struct ChatDrawerHost: View {
             ZStack(alignment: .leading) {
                 detail
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.top, topInset)
                     .padding(.bottom, bottomInset)
                     .overlay {
                         Color.black
@@ -412,10 +425,10 @@ private struct ChatDrawerHost: View {
                     .allowsHitTesting(false)
 
                 sidebar
-                    // Keep the panel edge-to-edge, but place its controls below the status-bar content.
-                    .padding(.top, max(topInset, 48))
+                    // Panel remains edge-to-edge; only its controls respect the status and home-indicator areas.
+                    .padding(.top, topInset)
                     .padding(.bottom, bottomInset)
-                    .frame(width: width, height: proxy.size.height + max(topInset, 48) + bottomInset, alignment: .top)
+                    .frame(width: width, height: proxy.size.height + topInset + bottomInset, alignment: .top)
                     .background(HaikuTheme.background.ignoresSafeArea())
                     .clipShape(panelShape)
                     .overlay {
