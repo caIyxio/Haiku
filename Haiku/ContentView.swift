@@ -360,7 +360,7 @@ struct ContentView: View {
 }
 
 
-/// ChatGPT-style drawer with live, full-surface horizontal dragging.
+/// ChatGPT-style overlay drawer with a nearly full-screen panel.
 private struct ChatDrawerHost: View {
     let sidebar: AnyView
     let detail: AnyView
@@ -372,17 +372,27 @@ private struct ChatDrawerHost: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let width = min(proxy.size.width * 0.86, 360)
+            let width = min(proxy.size.width * 0.89, 420)
+            let drawerHeight = max(proxy.size.height - 12, 0)
             let drag = liveTranslation
             let progress = min(max(isSidebarVisible ? 1 + drag / width : drag / width, 0), 1)
+            let drawerShape = UnevenRoundedRectangle(
+                cornerRadii: .init(
+                    topLeading: 0,
+                    bottomLeading: 0,
+                    bottomTrailing: 30,
+                    topTrailing: 30
+                ),
+                style: .continuous
+            )
 
             ZStack(alignment: .leading) {
                 detail
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .scaleEffect(1 - 0.035 * progress, anchor: .trailing)
-                    .offset(x: 22 * progress)
+                    .scaleEffect(1 - 0.075 * progress, anchor: .trailing)
+                    .offset(x: 20 * progress)
                     .overlay {
-                        HaikuTheme.background.opacity(0.22 * progress)
+                        HaikuTheme.background.opacity(0.28 * progress)
                             .ignoresSafeArea()
                             .allowsHitTesting(progress > 0.02)
                             .onTapGesture { close() }
@@ -391,17 +401,16 @@ private struct ChatDrawerHost: View {
                     .simultaneousGesture(drawerDrag(width: width))
 
                 sidebar
-                    .frame(width: width)
-                    .frame(maxHeight: .infinity)
-                    .background(HaikuTheme.background.ignoresSafeArea())
-                    .overlay(alignment: .trailing) {
-                        Rectangle()
-                            .fill(HaikuTheme.foreground.opacity(0.07))
-                            .frame(width: 0.5)
+                    .frame(width: width, height: drawerHeight)
+                    .background(HaikuTheme.background)
+                    .clipShape(drawerShape)
+                    .overlay {
+                        drawerShape
+                            .strokeBorder(HaikuTheme.foreground.opacity(0.08), lineWidth: 0.7)
                     }
-                    .scaleEffect(0.94 + 0.06 * progress, anchor: .leading)
+                    .scaleEffect(0.975 + 0.025 * progress, anchor: .leading)
                     .offset(x: -width + width * progress)
-                    .shadow(color: .black.opacity(0.12 * progress), radius: 24, x: 8, y: 0)
+                    .shadow(color: .black.opacity(0.18 * progress), radius: 30, x: 10, y: 0)
                     .allowsHitTesting(progress > 0.96)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -432,10 +441,10 @@ private struct ChatDrawerHost: View {
             .onEnded { value in
                 defer { hasStartedHorizontalDrag = false }
                 guard abs(value.translation.width) > abs(value.translation.height) else { return }
-                let predicted = value.predictedEndTranslation.width
+                let projected = value.predictedEndTranslation.width
                 let shouldOpen = isSidebarVisible
-                    ? predicted > -width * 0.28
-                    : predicted > width * 0.28
+                    ? projected > -width * 0.28
+                    : projected > width * 0.28
                 withAnimation(.spring(response: 0.38, dampingFraction: 0.86, blendDuration: 0.12)) {
                     isSidebarVisible = shouldOpen
                 }
