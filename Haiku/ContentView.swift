@@ -385,7 +385,6 @@ private struct ChatDrawerHost: View {
             let width = min(proxy.size.width * 0.89, 420)
             let topInset = proxy.safeAreaInsets.top
             let bottomInset = proxy.safeAreaInsets.bottom
-            let drawerHeight = proxy.size.height + topInset + bottomInset
             let progress = min(max(interactiveProgress ?? (isSidebarVisible ? 1 : 0), 0), 1)
             let panelShape = UnevenRoundedRectangle(
                 cornerRadii: .init(topLeading: 0, bottomLeading: 0, bottomTrailing: 30, topTrailing: 30),
@@ -395,6 +394,8 @@ private struct ChatDrawerHost: View {
             ZStack(alignment: .leading) {
                 detail
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.top, topInset)
+                    .padding(.bottom, bottomInset)
                     .overlay {
                         Color.black
                             .opacity(0.38 * progress)
@@ -405,19 +406,16 @@ private struct ChatDrawerHost: View {
                     .contentShape(Rectangle())
                     .simultaneousGesture(drawerDrag(width: width))
 
-                // Keep the status-bar region visually attached to the dimmed chat
-                // while the drawer itself begins below the safe-area inset.
+                // Full-screen dim layer, including the status-bar/sensor area.
                 Color.black
                     .opacity(0.38 * progress)
-                    .frame(height: topInset)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .ignoresSafeArea()
                     .allowsHitTesting(false)
 
                 sidebar
-                    .frame(width: width, height: drawerHeight - topInset - bottomInset)
                     .padding(.top, topInset)
                     .padding(.bottom, bottomInset)
-                    .frame(width: width, height: drawerHeight, alignment: .top)
+                    .frame(width: width, height: proxy.size.height, alignment: .top)
                     .background(HaikuTheme.background.ignoresSafeArea())
                     .clipShape(panelShape)
                     .overlay {
@@ -431,6 +429,7 @@ private struct ChatDrawerHost: View {
             .clipped()
             .background(HaikuTheme.background.ignoresSafeArea())
         }
+        .ignoresSafeArea()
         .background(HaikuTheme.background.ignoresSafeArea())
     }
 
@@ -442,6 +441,7 @@ private struct ChatDrawerHost: View {
                 if !hasStartedHorizontalDrag {
                     hasStartedHorizontalDrag = true
                     dismissKeyboard()
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 }
                 let start = isSidebarVisible ? CGFloat(1) : CGFloat(0)
                 let nextProgress = min(max(start + value.translation.width / width, 0), 1)
