@@ -347,7 +347,8 @@ private struct NativeChatSidebarHost: UIViewControllerRepresentable {
         split.delegate = context.coordinator
         split.presentsWithGesture = true
         split.displayModeButtonVisibility = .never
-        split.preferredDisplayMode = isRegularWidth ? .twoBesideSecondary : .oneOverSecondary
+        split.preferredSplitBehavior = isRegularWidth ? .tile : .overlay
+        split.preferredDisplayMode = isRegularWidth ? .oneBesideSecondary : .oneOverSecondary
         split.preferredPrimaryColumnWidthFraction = 0.78
         split.minimumPrimaryColumnWidth = 280
         split.maximumPrimaryColumnWidth = 360
@@ -364,7 +365,8 @@ private struct NativeChatSidebarHost: UIViewControllerRepresentable {
     func updateUIViewController(_ split: UISplitViewController, context: Context) {
         context.coordinator.primary?.rootView = sidebar
         context.coordinator.secondary?.rootView = detail
-        split.preferredDisplayMode = isRegularWidth ? .twoBesideSecondary : .oneOverSecondary
+        split.preferredSplitBehavior = isRegularWidth ? .tile : .overlay
+        split.preferredDisplayMode = isRegularWidth ? .oneBesideSecondary : .oneOverSecondary
         split.presentsWithGesture = true
         split.displayModeButtonVisibility = .never
     }
