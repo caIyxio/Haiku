@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct ChatMessage: Identifiable {
     let id = UUID()
@@ -53,13 +54,11 @@ struct ContentView: View {
                 HaikuAccountView(auth: auth)
                     .transition(.opacity)
             } else {
-                NavigationSplitView(columnVisibility: $columnVisibility) {
-                    sidebar
-                } detail: {
-                    detailView
-                }
-                .navigationSplitViewStyle(.balanced)
-                .navigationSplitViewColumnWidth(min: 250, ideal: 280, max: 320)
+                NativeChatSidebarHost(
+                    sidebar: AnyView(sidebar),
+                    detail: AnyView(detailView),
+                    isRegularWidth: horizontalSizeClass == .regular
+                )
                 .tint(HaikuTheme.accent)
                 .transition(.opacity)
             }
@@ -75,22 +74,21 @@ struct ContentView: View {
     }
 
     private var sidebar: some View {
-        List(selection: $selection) {
+        List {
             Section {
-                NavigationLink(value: HaikuDestination.chat) {
-                    Label("New chat", systemImage: "square.and.pencil")
-                }
-                .simultaneousGesture(TapGesture().onEnded {
+                Button {
                     messages.removeAll()
                     messageText = ""
-                })
+                    selection = .chat
+                } label: {
+                    Label("New chat", systemImage: "square.and.pencil")
+                }
             }
 
             Section("Recent") {
                 Text("Your conversations will appear here.")
                     .font(.footnote)
                     .foregroundStyle(HaikuTheme.secondary)
-                    .selectionDisabled()
             }
         }
         .listStyle(.sidebar)
@@ -123,8 +121,6 @@ struct ContentView: View {
             .padding(.vertical, 12)
             .background(.bar)
         }
-        .navigationTitle("Haiku")
-        .navigationBarTitleDisplayMode(.inline)
     }
 
     @ViewBuilder
@@ -335,5 +331,50 @@ struct ContentView: View {
             }
         }
         // Model inference will be connected in a later milestone.
+    }
+}
+
+
+/// Uses UIKit's native split-view controller in overlay mode on iPhone.
+/// The system owns the edge-swipe gesture and sidebar presentation.
+private struct NativeChatSidebarHost: UIViewControllerRepresentable {
+    let sidebar: AnyView
+    let detail: AnyView
+    let isRegularWidth: Bool
+
+    func makeUIViewController(context: Context) -> UISplitViewController {
+        let split = UISplitViewController(style: .doubleColumn)
+        split.delegate = context.coordinator
+        split.presentsWithGesture = true
+        split.displayModeButtonVisibility = .never
+        split.preferredDisplayMode = isRegularWidth ? .twoBesideSecondary : .oneOverSecondary
+        split.preferredPrimaryColumnWidthFraction = 0.78
+        split.minimumPrimaryColumnWidth = 280
+        split.maximumPrimaryColumnWidth = 360
+
+        let primary = UIHostingController(rootView: sidebar)
+        let secondary = UIHostingController(rootView: detail)
+        context.coordinator.primary = primary
+        context.coordinator.secondary = secondary
+        split.setViewController(primary, for: .primary)
+        split.setViewController(secondary, for: .secondary)
+        return split
+    }
+
+    func updateUIViewController(_ split: UISplitViewController, context: Context) {
+        context.coordinator.primary?.rootView = sidebar
+        context.coordinator.secondary?.rootView = detail
+        split.preferredDisplayMode = isRegularWidth ? .twoBesideSecondary : .oneOverSecondary
+        split.presentsWithGesture = true
+        split.displayModeButtonVisibility = .never
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    final class Coordinator: NSObject, UISplitViewControllerDelegate {
+        var primary: UIHostingController<AnyView>?
+        var secondary: UIHostingController<AnyView>?
     }
 }
