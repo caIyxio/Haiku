@@ -15,15 +15,11 @@ private struct HaikuModelOption: Identifiable {
 
 private enum HaikuModelCatalog {
     static let free = [
-        HaikuModelOption(id: "luna", name: "Luna", detail: "Balanced · everyday use", isPaid: false),
-        HaikuModelOption(id: "swift", name: "Swift", detail: "Fast · lightweight tasks", isPaid: false),
-        HaikuModelOption(id: "breeze", name: "Breeze", detail: "Concise · quick answers", isPaid: false)
+        HaikuModelOption(id: "luna", name: "Luna", detail: "Free", isPaid: false)
     ]
 
     static let paid = [
-        HaikuModelOption(id: "atlas", name: "Atlas", detail: "Advanced reasoning", isPaid: true),
-        HaikuModelOption(id: "sage", name: "Sage", detail: "Writing · deep analysis", isPaid: true),
-        HaikuModelOption(id: "nova", name: "Nova", detail: "Experimental capabilities", isPaid: true)
+        HaikuModelOption(id: "orion", name: "Orion", detail: "Paid", isPaid: true)
     ]
 
     static let all = free + paid
@@ -362,7 +358,7 @@ struct ContentView: View {
 
             HStack(spacing: 10) {
                 Menu {
-                    Section("Free models") {
+                    Section("Free") {
                         ForEach(HaikuModelCatalog.free) { model in
                             Button {
                                 selectedModelID = model.id
@@ -376,7 +372,7 @@ struct ContentView: View {
                         }
                     }
 
-                    Section("Paid plan") {
+                    Section("Paid") {
                         ForEach(HaikuModelCatalog.paid) { model in
                             Button {} label: {
                                 Label(model.name + " · " + model.detail, systemImage: "lock.fill")
