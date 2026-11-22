@@ -376,6 +376,7 @@ private struct ChatDrawerHost: View {
 
     @State private var interactiveProgress: CGFloat? = nil
     @State private var hasStartedHorizontalDrag = false
+    @State private var didFireThresholdHaptic = false
 
     private let drawerSpring = Animation.spring(response: 0.42, dampingFraction: 0.9, blendDuration: 0)
 
@@ -403,6 +404,14 @@ private struct ChatDrawerHost: View {
                     }
                     .contentShape(Rectangle())
                     .simultaneousGesture(drawerDrag(width: width))
+
+                // Keep the status-bar region visually attached to the dimmed chat
+                // while the drawer itself begins below the safe-area inset.
+                Color.black
+                    .opacity(0.38 * progress)
+                    .frame(height: topInset)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .allowsHitTesting(false)
 
                 sidebar
                     .frame(width: width, height: drawerHeight - topInset - bottomInset)
@@ -435,10 +444,19 @@ private struct ChatDrawerHost: View {
                     dismissKeyboard()
                 }
                 let start = isSidebarVisible ? CGFloat(1) : CGFloat(0)
-                interactiveProgress = min(max(start + value.translation.width / width, 0), 1)
+                let nextProgress = min(max(start + value.translation.width / width, 0), 1)
+                if !didFireThresholdHaptic,
+                   (start < 0.5 && nextProgress >= 0.5) || (start > 0.5 && nextProgress <= 0.5) {
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred(intensity: 0.7)
+                    didFireThresholdHaptic = true
+                }
+                interactiveProgress = nextProgress
             }
             .onEnded { value in
-                defer { hasStartedHorizontalDrag = false }
+                defer {
+                    hasStartedHorizontalDrag = false
+                    didFireThresholdHaptic = false
+                }
                 guard abs(value.translation.width) > abs(value.translation.height) else {
                     withAnimation(drawerSpring) { interactiveProgress = nil }
                     return
