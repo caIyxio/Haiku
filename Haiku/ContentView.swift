@@ -54,12 +54,22 @@ struct ContentView: View {
                 HaikuAccountView(auth: auth)
                     .transition(.opacity)
             } else {
-                NativeChatSidebarHost(
-                    sidebar: AnyView(sidebar),
-                    detail: AnyView(detailView(onToggleSidebar: { isSidebarVisible = true })),
-                    isRegularWidth: horizontalSizeClass == .regular,
-                    isSidebarVisible: $isSidebarVisible
-                )
+                Group {
+                    if horizontalSizeClass == .regular {
+                        NativeChatSidebarHost(
+                            sidebar: AnyView(sidebar),
+                            detail: AnyView(detailView(onToggleSidebar: { isSidebarVisible = true })),
+                            isRegularWidth: true,
+                            isSidebarVisible: $isSidebarVisible
+                        )
+                    } else {
+                        CompactChatSidebarOverlay(
+                            sidebar: AnyView(sidebar),
+                            detail: AnyView(detailView(onToggleSidebar: { isSidebarVisible = true })),
+                            isSidebarVisible: $isSidebarVisible
+                        )
+                    }
+                }
                 .tint(HaikuTheme.accent)
                 .transition(.opacity)
             }
@@ -113,10 +123,7 @@ struct ContentView: View {
                 }
 
                 Section("Your chats") {
-                    Text("Your conversations will appear here.")
-                        .font(.footnote)
-                        .foregroundStyle(HaikuTheme.secondary)
-                        .listRowSeparator(.hidden)
+
                 }
             }
             .listStyle(.sidebar)
@@ -386,6 +393,77 @@ struct ContentView: View {
     }
 }
 
+
+/// Compact iPhone presentation: keep the live chat underneath and slide the drawer over it.
+private struct CompactChatSidebarOverlay: View {
+    let sidebar: AnyView
+    let detail: AnyView
+    @Binding var isSidebarVisible: Bool
+
+    var body: some View {
+        GeometryReader { proxy in
+            let drawerWidth = proxy.size.width * 0.80
+
+            ZStack(alignment: .leading) {
+                detail
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+                    .overlay {
+                        if isSidebarVisible {
+                            Color.black.opacity(0.34)
+                                .contentShape(Rectangle())
+                                .onTapGesture { closeSidebar() }
+                        }
+                    }
+                    .clipShape(
+                        UnevenRoundedRectangle(
+                            topLeadingRadius: isSidebarVisible ? 28 : 0,
+                            bottomLeadingRadius: isSidebarVisible ? 28 : 0,
+                            style: .continuous
+                        )
+                    )
+                    .offset(x: isSidebarVisible ? drawerWidth : 0)
+
+                if isSidebarVisible {
+                    sidebar
+                        .frame(width: drawerWidth, height: proxy.size.height)
+                        .background(HaikuTheme.background.ignoresSafeArea())
+                        .clipShape(
+                            UnevenRoundedRectangle(
+                                topTrailingRadius: 26,
+                                bottomTrailingRadius: 26,
+                                style: .continuous
+                            )
+                        )
+                        .transition(.move(edge: .leading))
+                        .zIndex(2)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(HaikuTheme.background.ignoresSafeArea())
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 18)
+                    .onEnded { value in
+                        if !isSidebarVisible && value.startLocation.x < 28 && value.translation.width > 70 {
+                            openSidebar()
+                        } else if isSidebarVisible && value.translation.width < -70 {
+                            closeSidebar()
+                        }
+                    }
+            )
+            .animation(.spring(response: 0.38, dampingFraction: 0.90), value: isSidebarVisible)
+        }
+        .ignoresSafeArea()
+    }
+
+    private func openSidebar() {
+        isSidebarVisible = true
+    }
+
+    private func closeSidebar() {
+        isSidebarVisible = false
+    }
+}
 
 /// UIKit owns the real system sidebar, including its edge-swipe gesture.
 private struct NativeChatSidebarHost: UIViewControllerRepresentable {
