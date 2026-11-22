@@ -429,8 +429,8 @@ private struct CompactChatSidebarOverlay: View {
                         .background(HaikuTheme.background.ignoresSafeArea())
                         .clipShape(
                             UnevenRoundedRectangle(
-                                topTrailingRadius: 26,
                                 bottomTrailingRadius: 26,
+                                topTrailingRadius: 26,
                                 style: .continuous
                             )
                         )
