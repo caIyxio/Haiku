@@ -56,7 +56,7 @@ struct ContentView: View {
             } else {
                 NativeChatSidebarHost(
                     sidebar: AnyView(sidebar),
-                    detail: AnyView(detailView(onToggleSidebar: { isSidebarVisible = true })),
+                    detail: AnyView(detailView),
                     isRegularWidth: horizontalSizeClass == .regular,
                     isSidebarVisible: $isSidebarVisible
                 )
@@ -81,12 +81,10 @@ struct ContentView: View {
                 Text("Haiku")
                     .font(.system(size: 23, weight: .semibold, design: .serif))
                     .foregroundStyle(HaikuTheme.foreground)
+
                 Spacer()
-                Button {
-                    messages.removeAll()
-                    messageText = ""
-                    selection = .chat
-                } label: {
+
+                Button(action: startNewChat) {
                     Image(systemName: "square.and.pencil")
                         .font(.system(size: 18, weight: .medium))
                         .frame(width: 42, height: 42)
@@ -102,19 +100,8 @@ struct ContentView: View {
             Divider().overlay(HaikuTheme.foreground.opacity(0.08))
 
             List {
-                Section {
-                    Button {
-                        messages.removeAll()
-                        messageText = ""
-                        selection = .chat
-                    } label: {
-                        Label("New chat", systemImage: "square.and.pencil")
-                    }
-                    .listRowSeparator(.hidden)
-                }
-
                 Section("Your chats") {
-
+                    // Conversation history will populate this native sidebar list.
                 }
             }
             .listStyle(.sidebar)
@@ -122,31 +109,18 @@ struct ContentView: View {
 
             Divider().overlay(HaikuTheme.foreground.opacity(0.08))
 
-            HStack(spacing: 12) {
-                Button {
-                    messages.removeAll()
-                    messageText = ""
-                    selection = .chat
-                } label: {
-                    Label("Chat", systemImage: "square.and.pencil")
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 13)
-                        .frame(height: 44)
-                        .background(HaikuTheme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
-                .buttonStyle(.plain)
-
-                Button {
-                    selection = .settings
-                } label: {
-                    Image(systemName: "person.crop.circle")
-                        .font(.system(size: 23))
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Account and settings")
+            Button(action: openSettings) {
+                Label("Account & settings", systemImage: "person.crop.circle")
+                    .font(.system(size: 15, weight: .medium))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 13)
+                    .frame(height: 48)
+                    .background(
+                        HaikuTheme.surface,
+                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    )
             }
+            .buttonStyle(.plain)
             .foregroundStyle(HaikuTheme.foreground)
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
@@ -154,13 +128,29 @@ struct ContentView: View {
         .background(HaikuTheme.background.ignoresSafeArea())
     }
 
+    private func startNewChat() {
+        messages.removeAll()
+        messageText = ""
+        selection = .chat
+        if horizontalSizeClass != .regular {
+            isSidebarVisible = false
+        }
+    }
+
+    private func openSettings() {
+        selection = .settings
+        if horizontalSizeClass != .regular {
+            isSidebarVisible = false
+        }
+    }
+
     @ViewBuilder
-    private func detailView(onToggleSidebar: @escaping () -> Void) -> some View {
+    private var detailView: some View {
         switch selection {
         case .settings:
             settingsScreen
         case .chat, .none:
-            chatScreen(onToggleSidebar: onToggleSidebar)
+            chatScreen
         }
     }
 
@@ -187,9 +177,9 @@ struct ContentView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func chatScreen(onToggleSidebar: @escaping () -> Void) -> some View {
+    private var chatScreen: some View {
         VStack(spacing: 0) {
-            header(onToggleSidebar: onToggleSidebar)
+            header
 
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 18) {
@@ -209,16 +199,10 @@ struct ContentView: View {
         .background(HaikuTheme.background.ignoresSafeArea())
     }
 
-    private func header(onToggleSidebar: @escaping () -> Void) -> some View {
+    private var header: some View {
         HStack {
-            Button(action: onToggleSidebar) {
-                Image(systemName: "line.3.horizontal")
-                    .font(.system(size: 19, weight: .medium))
-                    .frame(width: 40, height: 40)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Open sidebar")
+            Spacer()
+                .frame(width: 40)
 
             Spacer(minLength: 0)
 
@@ -227,11 +211,7 @@ struct ContentView: View {
 
             Spacer(minLength: 0)
 
-            Button {
-                messages.removeAll()
-                messageText = ""
-                selection = .chat
-            } label: {
+            Button(action: startNewChat) {
                 Image(systemName: "square.and.pencil")
                     .font(.system(size: 18, weight: .regular))
                     .frame(width: 40, height: 40)
