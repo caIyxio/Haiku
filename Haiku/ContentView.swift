@@ -380,15 +380,15 @@ struct ContentView: View {
                             selectedModelID = model.id
                         } label: {
                             if selectedModelID == model.id {
-                                Label(model.name + " · " + model.detail, systemImage: "checkmark")
+                                Label("Haiku 1.0-" + model.name, systemImage: "checkmark")
                             } else {
-                                Text(model.name + " · " + model.detail)
+                                Text("Haiku 1.0-" + model.name)
                             }
                         }
                     }
                     ForEach(HaikuModelCatalog.paid) { model in
                         Button {} label: {
-                            Label(model.name + " · " + model.detail, systemImage: "lock.fill")
+                            Label("Haiku 1.0-" + model.name, systemImage: "lock.fill")
                         }
                         .disabled(true)
                     }
