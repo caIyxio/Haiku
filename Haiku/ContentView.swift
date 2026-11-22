@@ -395,8 +395,15 @@ private struct ChatDrawerHost: View {
     var body: some View {
         GeometryReader { proxy in
             let width = min(proxy.size.width * 0.89, 420)
-            let topInset = proxy.safeAreaInsets.top
-            let bottomInset = proxy.safeAreaInsets.bottom
+            // GeometryReader may already be laid out inside the safe area, reporting zero.
+            // Read the hosting window's real insets so drawer content clears the status bar
+            // and home indicator while the drawer surface itself remains edge-to-edge.
+            let keyWindow = UIApplication.shared.connectedScenes
+                .compactMap { $0 as? UIWindowScene }
+                .flatMap(\.windows)
+                .first(where: \.isKeyWindow)
+            let topInset = max(proxy.safeAreaInsets.top, keyWindow?.safeAreaInsets.top ?? 0)
+            let bottomInset = max(proxy.safeAreaInsets.bottom, keyWindow?.safeAreaInsets.bottom ?? 0)
             let progress = min(max(interactiveProgress ?? (isSidebarVisible ? 1 : 0), 0), 1)
             let panelShape = UnevenRoundedRectangle(
                 cornerRadii: .init(topLeading: 0, bottomLeading: 0, bottomTrailing: 30, topTrailing: 30),
