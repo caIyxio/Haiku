@@ -412,8 +412,10 @@ private struct ChatDrawerHost: View {
                     .allowsHitTesting(false)
 
                 sidebar
+                    // Keep the panel edge-to-edge, but place its controls below the status-bar content.
+                    .padding(.top, max(topInset, 48))
                     .padding(.bottom, bottomInset)
-                    .frame(width: width, height: proxy.size.height + bottomInset, alignment: .top)
+                    .frame(width: width, height: proxy.size.height + max(topInset, 48) + bottomInset, alignment: .top)
                     .background(HaikuTheme.background.ignoresSafeArea())
                     .clipShape(panelShape)
                     .overlay {
