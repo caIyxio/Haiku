@@ -35,7 +35,7 @@ struct ContentView: View {
     @State private var isShowingSplash = true
     @StateObject private var auth = HaikuAuthStore()
     @State private var selection: HaikuDestination? = .chat
-    @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @State private var isSidebarVisible = false
     @State private var messageText = ""
     @State private var selectedModelID = "luna"
     @State private var messages: [ChatMessage] = []
@@ -56,8 +56,9 @@ struct ContentView: View {
             } else {
                 NativeChatSidebarHost(
                     sidebar: AnyView(sidebar),
-                    detail: AnyView(detailView),
-                    isRegularWidth: horizontalSizeClass == .regular
+                    detail: AnyView(detailView(onToggleSidebar: { isSidebarVisible = true })),
+                    isRegularWidth: horizontalSizeClass == .regular,
+                    isSidebarVisible: $isSidebarVisible
                 )
                 .tint(HaikuTheme.accent)
                 .transition(.opacity)
@@ -74,27 +75,55 @@ struct ContentView: View {
     }
 
     private var sidebar: some View {
-        List {
-            Section {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Haiku")
+                    .font(.system(size: 23, weight: .semibold, design: .serif))
+                    .foregroundStyle(HaikuTheme.foreground)
+                Spacer()
                 Button {
                     messages.removeAll()
                     messageText = ""
                     selection = .chat
                 } label: {
-                    Label("New chat", systemImage: "square.and.pencil")
+                    Image(systemName: "square.and.pencil")
+                        .font(.system(size: 18, weight: .medium))
+                        .frame(width: 42, height: 42)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("New chat")
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 10)
+            .padding(.bottom, 8)
+
+            Divider().overlay(HaikuTheme.foreground.opacity(0.08))
+
+            List {
+                Section {
+                    Button {
+                        messages.removeAll()
+                        messageText = ""
+                        selection = .chat
+                    } label: {
+                        Label("New chat", systemImage: "square.and.pencil")
+                    }
+                    .listRowSeparator(.hidden)
+                }
+
+                Section("Your chats") {
+                    Text("Your conversations will appear here.")
+                        .font(.footnote)
+                        .foregroundStyle(HaikuTheme.secondary)
+                        .listRowSeparator(.hidden)
                 }
             }
+            .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
 
-            Section("Recent") {
-                Text("Your conversations will appear here.")
-                    .font(.footnote)
-                    .foregroundStyle(HaikuTheme.secondary)
-            }
-        }
-        .listStyle(.sidebar)
-        .scrollContentBackground(.hidden)
-        .background(HaikuTheme.background)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+            Divider().overlay(HaikuTheme.foreground.opacity(0.08))
+
             HStack(spacing: 12) {
                 Button {
                     messages.removeAll()
@@ -102,9 +131,12 @@ struct ContentView: View {
                     selection = .chat
                 } label: {
                     Label("Chat", systemImage: "square.and.pencil")
-                        .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 13)
+                        .frame(height: 44)
+                        .background(HaikuTheme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.plain)
 
                 Button {
                     selection = .settings
@@ -117,19 +149,20 @@ struct ContentView: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("Account and settings")
             }
+            .foregroundStyle(HaikuTheme.foreground)
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
-            .background(.bar)
         }
+        .background(HaikuTheme.background.ignoresSafeArea())
     }
 
     @ViewBuilder
-    private var detailView: some View {
+    private func detailView(onToggleSidebar: @escaping () -> Void) -> some View {
         switch selection {
         case .settings:
             settingsScreen
         case .chat, .none:
-            chatScreen
+            chatScreen(onToggleSidebar: onToggleSidebar)
         }
     }
 
@@ -156,9 +189,11 @@ struct ContentView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private var chatScreen: some View {
-        VStack(spacing: 0) {
-            header
+    private func chatScreen(onToggleSidebar: @escaping () -> Void) -> some View {
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                header(onToggleSidebar: onToggleSidebar)
+                    .padding(.top, geometry.safeAreaInsets.top)
 
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 18) {
@@ -171,17 +206,33 @@ struct ContentView: View {
             }
             .scrollDismissesKeyboard(.interactively)
 
-            composer
+                composer
+                    .padding(.bottom, geometry.safeAreaInsets.bottom)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .foregroundStyle(HaikuTheme.foreground)
+            .background(HaikuTheme.background.ignoresSafeArea())
         }
-        .foregroundStyle(HaikuTheme.foreground)
-        .background(HaikuTheme.background.ignoresSafeArea())
+        .ignoresSafeArea()
     }
 
-    private var header: some View {
+    private func header(onToggleSidebar: @escaping () -> Void) -> some View {
         HStack {
+            Button(action: onToggleSidebar) {
+                Image(systemName: "line.3.horizontal")
+                    .font(.system(size: 19, weight: .medium))
+                    .frame(width: 40, height: 40)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Open sidebar")
+
+            Spacer(minLength: 0)
+
             Text("Haiku")
                 .font(.system(size: 22, weight: .semibold, design: .serif))
-                .frame(maxWidth: .infinity)
+
+            Spacer(minLength: 0)
 
             Button {
                 messages.removeAll()
@@ -193,10 +244,11 @@ struct ContentView: View {
                     .frame(width: 40, height: 40)
                     .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
             .accessibilityLabel("New chat")
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 8)
+        .padding(.horizontal, 12)
+        .padding(.top, 4)
         .foregroundStyle(HaikuTheme.foreground)
     }
 
@@ -335,28 +387,31 @@ struct ContentView: View {
 }
 
 
-/// Uses UIKit's native split-view controller in overlay mode on iPhone.
-/// The system owns the edge-swipe gesture and sidebar presentation.
+/// UIKit owns the real system sidebar, including its edge-swipe gesture.
 private struct NativeChatSidebarHost: UIViewControllerRepresentable {
     let sidebar: AnyView
     let detail: AnyView
     let isRegularWidth: Bool
+    @Binding var isSidebarVisible: Bool
 
     func makeUIViewController(context: Context) -> UISplitViewController {
         let split = UISplitViewController(style: .doubleColumn)
         split.delegate = context.coordinator
         split.presentsWithGesture = true
         split.displayModeButtonVisibility = .never
-        split.preferredSplitBehavior = isRegularWidth ? .tile : .overlay
-        split.preferredDisplayMode = isRegularWidth ? .oneBesideSecondary : .oneOverSecondary
-        split.preferredPrimaryColumnWidthFraction = 0.78
-        split.minimumPrimaryColumnWidth = 280
-        split.maximumPrimaryColumnWidth = 360
+        configure(split)
 
         let primary = UIHostingController(rootView: sidebar)
         let secondary = UIHostingController(rootView: detail)
+        primary.safeAreaRegions = []
+        secondary.safeAreaRegions = []
+        primary.view.backgroundColor = UIColor.clear
+        secondary.view.backgroundColor = UIColor.clear
         context.coordinator.primary = primary
         context.coordinator.secondary = secondary
+        context.coordinator.split = split
+        context.coordinator.visibility = $isSidebarVisible
+
         split.setViewController(primary, for: .primary)
         split.setViewController(secondary, for: .secondary)
         return split
@@ -365,10 +420,32 @@ private struct NativeChatSidebarHost: UIViewControllerRepresentable {
     func updateUIViewController(_ split: UISplitViewController, context: Context) {
         context.coordinator.primary?.rootView = sidebar
         context.coordinator.secondary?.rootView = detail
+        context.coordinator.visibility = $isSidebarVisible
+        configure(split)
+
+        if isRegularWidth {
+            if split.displayMode == .secondaryOnly {
+                split.show(.primary)
+            }
+            context.coordinator.lastRequestedVisibility = true
+        } else if context.coordinator.lastRequestedVisibility != isSidebarVisible {
+            if isSidebarVisible {
+                split.show(.primary)
+            } else {
+                split.hide(.primary)
+            }
+            context.coordinator.lastRequestedVisibility = isSidebarVisible
+        }
+    }
+
+    private func configure(_ split: UISplitViewController) {
         split.preferredSplitBehavior = isRegularWidth ? .tile : .overlay
-        split.preferredDisplayMode = isRegularWidth ? .oneBesideSecondary : .oneOverSecondary
+        split.preferredDisplayMode = isRegularWidth ? .oneBesideSecondary : .secondaryOnly
         split.presentsWithGesture = true
         split.displayModeButtonVisibility = .never
+        split.preferredPrimaryColumnWidth = 320
+        split.minimumPrimaryColumnWidth = 280
+        split.maximumPrimaryColumnWidth = 360
     }
 
     func makeCoordinator() -> Coordinator {
@@ -378,5 +455,15 @@ private struct NativeChatSidebarHost: UIViewControllerRepresentable {
     final class Coordinator: NSObject, UISplitViewControllerDelegate {
         var primary: UIHostingController<AnyView>?
         var secondary: UIHostingController<AnyView>?
+        weak var split: UISplitViewController?
+        var visibility: Binding<Bool>?
+        var lastRequestedVisibility = false
+
+        func splitViewControllerDidChangeDisplayMode(_ svc: UISplitViewController) {
+            guard !svc.isCollapsed, svc.splitBehavior == .overlay else { return }
+            let visible = svc.displayMode == .oneOverSecondary
+            lastRequestedVisibility = visible
+            visibility?.wrappedValue = visible
+        }
     }
 }
