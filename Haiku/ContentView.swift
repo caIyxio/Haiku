@@ -208,11 +208,15 @@ struct ContentView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
+                .padding(.bottom, 112)
             }
             .scrollDismissesKeyboard(.interactively)
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        .overlay(alignment: .bottom) {
+            // chatScreen is laid out inside the device safe area, so anchoring
+            // directly to its bottom keeps the entire composer above the home indicator.
             composer
+                .padding(.bottom, 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .foregroundStyle(HaikuTheme.foreground)
