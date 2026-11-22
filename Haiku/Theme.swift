@@ -2,11 +2,12 @@ import SwiftUI
 import UIKit
 
 enum HaikuTheme {
-    static let background = Color(uiColor: UIColor { traits in
+    static let uiBackground = UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.10, green: 0.10, blue: 0.10, alpha: 1.0)
             : UIColor(red: 0.96, green: 0.95, blue: 0.91, alpha: 1.0)
-    })
+    }
+    static let background = Color(uiColor: uiBackground)
 
     static let surface = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
