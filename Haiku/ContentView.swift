@@ -394,6 +394,7 @@ private struct ChatDrawerHost: View {
             ZStack(alignment: .leading) {
                 detail
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.bottom, bottomInset)
                     .overlay {
                         Color.black
                             .opacity(0.38 * progress)
@@ -411,15 +412,14 @@ private struct ChatDrawerHost: View {
                     .allowsHitTesting(false)
 
                 sidebar
-                    .padding(.top, topInset)
                     .padding(.bottom, bottomInset)
-                    .frame(width: width, height: proxy.size.height + topInset + bottomInset, alignment: .top)
+                    .frame(width: width, height: proxy.size.height + bottomInset, alignment: .top)
                     .background(HaikuTheme.background.ignoresSafeArea())
                     .clipShape(panelShape)
                     .overlay {
                         panelShape.strokeBorder(HaikuTheme.foreground.opacity(0.07), lineWidth: 0.7)
                     }
-                    .offset(x: -width * (1 - progress), y: -topInset)
+                    .offset(x: -width * (1 - progress), y: 0)
                     .shadow(color: .black.opacity(0.2 * progress), radius: 24, x: 8, y: 0)
                     .allowsHitTesting(progress > 0.96)
             }
@@ -427,6 +427,7 @@ private struct ChatDrawerHost: View {
             .clipped()
             .background(HaikuTheme.background.ignoresSafeArea())
         }
+        .ignoresSafeArea(edges: .top)
         .background(HaikuTheme.background.ignoresSafeArea())
     }
 
