@@ -54,10 +54,9 @@ struct ContentView: View {
                 HaikuAccountView(auth: auth)
                     .transition(.opacity)
             } else {
-                NativeChatSidebarHost(
+                ChatDrawerHost(
                     sidebar: AnyView(sidebar),
                     detail: AnyView(detailView),
-                    isRegularWidth: horizontalSizeClass == .regular,
                     isSidebarVisible: $isSidebarVisible
                 )
                 .tint(HaikuTheme.accent)
@@ -360,84 +359,81 @@ struct ContentView: View {
 }
 
 
-/// UIKit owns the real system sidebar, including its edge-swipe gesture.
-private struct NativeChatSidebarHost: UIViewControllerRepresentable {
+/// ChatGPT-style drawer with live, full-surface horizontal dragging.
+private struct ChatDrawerHost: View {
     let sidebar: AnyView
     let detail: AnyView
-    let isRegularWidth: Bool
     @Binding var isSidebarVisible: Bool
 
-    func makeUIViewController(context: Context) -> UISplitViewController {
-        let split = UISplitViewController(style: .doubleColumn)
-        split.delegate = context.coordinator
-        split.view.backgroundColor = HaikuTheme.uiBackground
-        split.view.isOpaque = true
-        split.presentsWithGesture = true
-        split.displayModeButtonVisibility = .never
-        configure(split)
+    @GestureState private var liveTranslation: CGFloat = 0
 
-        let primary = UIHostingController(rootView: sidebar)
-        let secondary = UIHostingController(rootView: detail)
-        primary.view.backgroundColor = UIColor.clear
-        secondary.view.backgroundColor = UIColor.clear
-        context.coordinator.primary = primary
-        context.coordinator.secondary = secondary
-        context.coordinator.split = split
-        context.coordinator.visibility = $isSidebarVisible
+    var body: some View {
+        GeometryReader { proxy in
+            let width = min(proxy.size.width * 0.86, 360)
+            let drag = liveTranslation
+            let progress = min(max(isSidebarVisible ? 1 + drag / width : drag / width, 0), 1)
 
-        split.setViewController(primary, for: .primary)
-        split.setViewController(secondary, for: .secondary)
-        return split
-    }
+            ZStack(alignment: .leading) {
+                detail
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .scaleEffect(1 - 0.035 * progress, anchor: .trailing)
+                    .offset(x: 22 * progress)
+                    .overlay {
+                        HaikuTheme.background.opacity(0.22 * progress)
+                            .ignoresSafeArea()
+                            .allowsHitTesting(progress > 0.02)
+                            .onTapGesture { close() }
+                    }
+                    .contentShape(Rectangle())
+                    .simultaneousGesture(drawerDrag(width: width))
 
-    func updateUIViewController(_ split: UISplitViewController, context: Context) {
-        context.coordinator.primary?.rootView = sidebar
-        context.coordinator.secondary?.rootView = detail
-        context.coordinator.visibility = $isSidebarVisible
-        configure(split)
-
-        if isRegularWidth {
-            if split.displayMode == .secondaryOnly {
-                split.show(.primary)
+                sidebar
+                    .frame(width: width)
+                    .frame(maxHeight: .infinity)
+                    .background(HaikuTheme.background.ignoresSafeArea())
+                    .overlay(alignment: .trailing) {
+                        Rectangle()
+                            .fill(HaikuTheme.foreground.opacity(0.07))
+                            .frame(width: 0.5)
+                    }
+                    .scaleEffect(0.94 + 0.06 * progress, anchor: .leading)
+                    .offset(x: -width + width * progress)
+                    .shadow(color: .black.opacity(0.12 * progress), radius: 24, x: 8, y: 0)
+                    .allowsHitTesting(progress > 0.96)
             }
-            context.coordinator.lastRequestedVisibility = true
-        } else if context.coordinator.lastRequestedVisibility != isSidebarVisible {
-            if isSidebarVisible {
-                split.show(.primary)
-            } else {
-                split.hide(.primary)
-            }
-            context.coordinator.lastRequestedVisibility = isSidebarVisible
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipped()
+            .background(HaikuTheme.background.ignoresSafeArea())
+            .onChange(of: isSidebarVisible) { _, _ in }
         }
+        .background(HaikuTheme.background.ignoresSafeArea())
     }
 
-    private func configure(_ split: UISplitViewController) {
-        split.preferredSplitBehavior = isRegularWidth ? .tile : .overlay
-        split.preferredDisplayMode = isRegularWidth
-            ? .oneBesideSecondary
-            : (isSidebarVisible ? .oneOverSecondary : .secondaryOnly)
-        split.presentsWithGesture = true
-        split.displayModeButtonVisibility = .never
-        split.preferredPrimaryColumnWidth = 320
-        split.minimumPrimaryColumnWidth = 280
-        split.maximumPrimaryColumnWidth = 360
+    private func drawerDrag(width: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 8, coordinateSpace: .local)
+            .updating($liveTranslation) { value, state, _ in
+                guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                if isSidebarVisible {
+                    state = max(-width, min(0, value.translation.width))
+                } else {
+                    state = max(0, min(width, value.translation.width))
+                }
+            }
+            .onEnded { value in
+                guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                let predicted = value.predictedEndTranslation.width
+                let shouldOpen = isSidebarVisible
+                    ? predicted > -width * 0.28
+                    : predicted > width * 0.28
+                withAnimation(.spring(response: 0.38, dampingFraction: 0.86, blendDuration: 0.12)) {
+                    isSidebarVisible = shouldOpen
+                }
+            }
     }
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator()
-    }
-
-    final class Coordinator: NSObject, UISplitViewControllerDelegate {
-        var primary: UIHostingController<AnyView>?
-        var secondary: UIHostingController<AnyView>?
-        weak var split: UISplitViewController?
-        var visibility: Binding<Bool>?
-        var lastRequestedVisibility = false
-
-        func splitViewControllerDidChangeDisplayMode(_ svc: UISplitViewController) {
-            let visible = svc.displayMode == .oneOverSecondary || svc.displayMode == .oneBesideSecondary
-            lastRequestedVisibility = visible
-            visibility?.wrappedValue = visible
+    private func close() {
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.86, blendDuration: 0.12)) {
+            isSidebarVisible = false
         }
     }
 }
