@@ -210,7 +210,8 @@ struct ContentView: View {
                 .padding(.top, 20)
             }
             .scrollDismissesKeyboard(.interactively)
-
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
             composer
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
