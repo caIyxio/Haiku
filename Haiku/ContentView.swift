@@ -187,10 +187,8 @@ struct ContentView: View {
     }
 
     private func chatScreen(onToggleSidebar: @escaping () -> Void) -> some View {
-        GeometryReader { geometry in
-            VStack(spacing: 0) {
-                header(onToggleSidebar: onToggleSidebar)
-                    .padding(.top, geometry.safeAreaInsets.top)
+        VStack(spacing: 0) {
+            header(onToggleSidebar: onToggleSidebar)
 
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 18) {
@@ -203,14 +201,11 @@ struct ContentView: View {
             }
             .scrollDismissesKeyboard(.interactively)
 
-                composer
-                    .padding(.bottom, geometry.safeAreaInsets.bottom)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .foregroundStyle(HaikuTheme.foreground)
-            .background(HaikuTheme.background.ignoresSafeArea())
+            composer
         }
-        .ignoresSafeArea()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .foregroundStyle(HaikuTheme.foreground)
+        .background(HaikuTheme.background.ignoresSafeArea())
     }
 
     private func header(onToggleSidebar: @escaping () -> Void) -> some View {
@@ -400,8 +395,6 @@ private struct NativeChatSidebarHost: UIViewControllerRepresentable {
 
         let primary = UIHostingController(rootView: sidebar)
         let secondary = UIHostingController(rootView: detail)
-        primary.safeAreaRegions = []
-        secondary.safeAreaRegions = []
         primary.view.backgroundColor = UIColor.clear
         secondary.view.backgroundColor = UIColor.clear
         context.coordinator.primary = primary
