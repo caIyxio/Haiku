@@ -99,13 +99,20 @@ struct ContentView: View {
 
             Divider().overlay(HaikuTheme.foreground.opacity(0.08))
 
-            List {
-                Section("Your chats") {
-                    // Conversation history will populate this native sidebar list.
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 12) {
+                    Text("Your chats")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(HaikuTheme.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 22)
+                        .padding(.top, 16)
+                    // Conversation history will populate this list.
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .listStyle(.sidebar)
-            .scrollContentBackground(.hidden)
+            .background(HaikuTheme.background)
+            .scrollIndicators(.hidden)
 
             Divider().overlay(HaikuTheme.foreground.opacity(0.08))
 
@@ -360,39 +367,36 @@ struct ContentView: View {
 }
 
 
-/// ChatGPT-style overlay drawer with a nearly full-screen panel.
+/// Full-height overlay drawer with a single, continuous interactive progress value.
 private struct ChatDrawerHost: View {
     let sidebar: AnyView
     let detail: AnyView
     @Binding var isSidebarVisible: Bool
     let dismissKeyboard: () -> Void
 
-    @GestureState private var liveTranslation: CGFloat = 0
+    @State private var interactiveProgress: CGFloat? = nil
     @State private var hasStartedHorizontalDrag = false
+
+    private let drawerSpring = Animation.spring(response: 0.42, dampingFraction: 0.9, blendDuration: 0)
 
     var body: some View {
         GeometryReader { proxy in
             let width = min(proxy.size.width * 0.89, 420)
-            let drawerHeight = max(proxy.size.height - 12, 0)
-            let drag = liveTranslation
-            let progress = min(max(isSidebarVisible ? 1 + drag / width : drag / width, 0), 1)
-            let drawerShape = UnevenRoundedRectangle(
-                cornerRadii: .init(
-                    topLeading: 0,
-                    bottomLeading: 0,
-                    bottomTrailing: 30,
-                    topTrailing: 30
-                ),
+            let topInset = proxy.safeAreaInsets.top
+            let bottomInset = proxy.safeAreaInsets.bottom
+            let drawerHeight = proxy.size.height + topInset + bottomInset
+            let progress = min(max(interactiveProgress ?? (isSidebarVisible ? 1 : 0), 0), 1)
+            let panelShape = UnevenRoundedRectangle(
+                cornerRadii: .init(topLeading: 0, bottomLeading: 0, bottomTrailing: 30, topTrailing: 30),
                 style: .continuous
             )
 
             ZStack(alignment: .leading) {
                 detail
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .scaleEffect(1 - 0.075 * progress, anchor: .trailing)
-                    .offset(x: 20 * progress)
                     .overlay {
-                        HaikuTheme.background.opacity(0.28 * progress)
+                        Color.black
+                            .opacity(0.38 * progress)
                             .ignoresSafeArea()
                             .allowsHitTesting(progress > 0.02)
                             .onTapGesture { close() }
@@ -401,16 +405,17 @@ private struct ChatDrawerHost: View {
                     .simultaneousGesture(drawerDrag(width: width))
 
                 sidebar
-                    .frame(width: width, height: drawerHeight)
-                    .background(HaikuTheme.background)
-                    .clipShape(drawerShape)
+                    .frame(width: width, height: drawerHeight - topInset - bottomInset)
+                    .padding(.top, topInset)
+                    .padding(.bottom, bottomInset)
+                    .frame(width: width, height: drawerHeight, alignment: .top)
+                    .background(HaikuTheme.background.ignoresSafeArea())
+                    .clipShape(panelShape)
                     .overlay {
-                        drawerShape
-                            .strokeBorder(HaikuTheme.foreground.opacity(0.08), lineWidth: 0.7)
+                        panelShape.strokeBorder(HaikuTheme.foreground.opacity(0.07), lineWidth: 0.7)
                     }
-                    .scaleEffect(0.975 + 0.025 * progress, anchor: .leading)
-                    .offset(x: -width + width * progress)
-                    .shadow(color: .black.opacity(0.18 * progress), radius: 30, x: 10, y: 0)
+                    .offset(x: -width * (1 - progress), y: -topInset)
+                    .shadow(color: .black.opacity(0.2 * progress), radius: 24, x: 8, y: 0)
                     .allowsHitTesting(progress > 0.96)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -422,39 +427,37 @@ private struct ChatDrawerHost: View {
 
     private func drawerDrag(width: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 8, coordinateSpace: .global)
-            .updating($liveTranslation) { value, state, _ in
+            .onChanged { value in
                 guard abs(value.translation.width) > 6,
                       abs(value.translation.width) > abs(value.translation.height) else { return }
-                if isSidebarVisible {
-                    state = max(-width, min(0, value.translation.width))
-                } else {
-                    state = max(0, min(width, value.translation.width))
+                if !hasStartedHorizontalDrag {
+                    hasStartedHorizontalDrag = true
+                    dismissKeyboard()
                 }
-            }
-            .onChanged { value in
-                guard !hasStartedHorizontalDrag,
-                      abs(value.translation.width) > 10,
-                      abs(value.translation.width) > abs(value.translation.height) else { return }
-                hasStartedHorizontalDrag = true
-                dismissKeyboard()
+                let start = isSidebarVisible ? CGFloat(1) : CGFloat(0)
+                interactiveProgress = min(max(start + value.translation.width / width, 0), 1)
             }
             .onEnded { value in
                 defer { hasStartedHorizontalDrag = false }
-                guard abs(value.translation.width) > abs(value.translation.height) else { return }
-                let projected = value.predictedEndTranslation.width
-                let shouldOpen = isSidebarVisible
-                    ? projected > -width * 0.28
-                    : projected > width * 0.28
-                withAnimation(.spring(response: 0.38, dampingFraction: 0.86, blendDuration: 0.12)) {
+                guard abs(value.translation.width) > abs(value.translation.height) else {
+                    withAnimation(drawerSpring) { interactiveProgress = nil }
+                    return
+                }
+                let current = interactiveProgress ?? (isSidebarVisible ? 1 : 0)
+                let projected = min(max(current + value.predictedEndTranslation.width / width * 0.35, 0), 1)
+                let shouldOpen = projected > 0.5
+                withAnimation(drawerSpring) {
                     isSidebarVisible = shouldOpen
+                    interactiveProgress = nil
                 }
             }
     }
 
     private func close() {
         dismissKeyboard()
-        withAnimation(.spring(response: 0.38, dampingFraction: 0.86, blendDuration: 0.12)) {
+        withAnimation(drawerSpring) {
             isSidebarVisible = false
+            interactiveProgress = nil
         }
     }
 }
