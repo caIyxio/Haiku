@@ -57,7 +57,8 @@ struct ContentView: View {
                 ChatDrawerHost(
                     sidebar: AnyView(sidebar),
                     detail: AnyView(detailView),
-                    isSidebarVisible: $isSidebarVisible
+                    isSidebarVisible: $isSidebarVisible,
+                    dismissKeyboard: { isComposerFocused = false }
                 )
                 .tint(HaikuTheme.accent)
                 .transition(.opacity)
@@ -364,8 +365,10 @@ private struct ChatDrawerHost: View {
     let sidebar: AnyView
     let detail: AnyView
     @Binding var isSidebarVisible: Bool
+    let dismissKeyboard: () -> Void
 
     @GestureState private var liveTranslation: CGFloat = 0
+    @State private var hasStartedHorizontalDrag = false
 
     var body: some View {
         GeometryReader { proxy in
@@ -404,22 +407,30 @@ private struct ChatDrawerHost: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .clipped()
             .background(HaikuTheme.background.ignoresSafeArea())
-            .onChange(of: isSidebarVisible) { _, _ in }
         }
         .background(HaikuTheme.background.ignoresSafeArea())
     }
 
     private func drawerDrag(width: CGFloat) -> some Gesture {
-        DragGesture(minimumDistance: 8, coordinateSpace: .local)
+        DragGesture(minimumDistance: 8, coordinateSpace: .global)
             .updating($liveTranslation) { value, state, _ in
-                guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                guard abs(value.translation.width) > 6,
+                      abs(value.translation.width) > abs(value.translation.height) else { return }
                 if isSidebarVisible {
                     state = max(-width, min(0, value.translation.width))
                 } else {
                     state = max(0, min(width, value.translation.width))
                 }
             }
+            .onChanged { value in
+                guard !hasStartedHorizontalDrag,
+                      abs(value.translation.width) > 10,
+                      abs(value.translation.width) > abs(value.translation.height) else { return }
+                hasStartedHorizontalDrag = true
+                dismissKeyboard()
+            }
             .onEnded { value in
+                defer { hasStartedHorizontalDrag = false }
                 guard abs(value.translation.width) > abs(value.translation.height) else { return }
                 let predicted = value.predictedEndTranslation.width
                 let shouldOpen = isSidebarVisible
@@ -432,6 +443,7 @@ private struct ChatDrawerHost: View {
     }
 
     private func close() {
+        dismissKeyboard()
         withAnimation(.spring(response: 0.38, dampingFraction: 0.86, blendDuration: 0.12)) {
             isSidebarVisible = false
         }
