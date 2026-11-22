@@ -39,6 +39,8 @@ struct ContentView: View {
     @State private var messageText = ""
     @State private var selectedModelID = "luna"
     @State private var messages: [ChatMessage] = []
+    @State private var sendingMessage: ChatMessage?
+    @Namespace private var messageSendNamespace
     @FocusState private var isComposerFocused: Bool
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
@@ -108,6 +110,7 @@ struct ContentView: View {
             }
         }
         .listStyle(.sidebar)
+        .listRowSeparator(.hidden)
         .scrollContentBackground(.hidden)
         .background(HaikuTheme.background)
         .navigationTitle("Haiku")
@@ -352,33 +355,42 @@ struct ContentView: View {
                 .lineLimit(1...5)
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
+                .opacity(sendingMessage == nil ? 1 : 0)
+                .overlay(alignment: .topLeading) {
+                    if let sendingMessage {
+                        Text(sendingMessage.text)
+                            .font(.system(size: 16))
+                            .padding(.horizontal, 15)
+                            .padding(.vertical, 11)
+                            .background(HaikuTheme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .matchedGeometryEffect(id: sendingMessage.id, in: messageSendNamespace, isSource: true)
+                            .padding(.leading, 16)
+                            .padding(.top, 16)
+                            .allowsHitTesting(false)
+                    }
+                }
                 .tint(HaikuTheme.accent)
                 .submitLabel(.send)
                 .onSubmit(sendMessage)
 
             HStack(spacing: 10) {
                 Menu {
-                    Section("Free") {
-                        ForEach(HaikuModelCatalog.free) { model in
-                            Button {
-                                selectedModelID = model.id
-                            } label: {
-                                if selectedModelID == model.id {
-                                    Label(model.name, systemImage: "checkmark")
-                                } else {
-                                    Text(model.name)
-                                }
+                    ForEach(HaikuModelCatalog.free) { model in
+                        Button {
+                            selectedModelID = model.id
+                        } label: {
+                            if selectedModelID == model.id {
+                                Label(model.name + " · " + model.detail, systemImage: "checkmark")
+                            } else {
+                                Text(model.name + " · " + model.detail)
                             }
                         }
                     }
-
-                    Section("Paid") {
-                        ForEach(HaikuModelCatalog.paid) { model in
-                            Button {} label: {
-                                Label(model.name + " · " + model.detail, systemImage: "lock.fill")
-                            }
-                            .disabled(true)
+                    ForEach(HaikuModelCatalog.paid) { model in
+                        Button {} label: {
+                            Label(model.name + " · " + model.detail, systemImage: "lock.fill")
                         }
+                        .disabled(true)
                     }
                 } label: {
                     HStack(spacing: 6) {
@@ -442,6 +454,7 @@ struct ContentView: View {
                     message.isUser ? HaikuTheme.surface : Color.clear,
                     in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                 )
+                .matchedGeometryEffect(id: message.id, in: messageSendNamespace, isSource: sendingMessage?.id != message.id)
 
             if !message.isUser { Spacer(minLength: 44) }
         }
@@ -451,8 +464,19 @@ struct ContentView: View {
     private func sendMessage() {
         let text = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        messages.append(ChatMessage(text: text, isUser: true))
-        messageText = ""
+        guard sendingMessage == nil else { return }
+        let message = ChatMessage(text: text, isUser: true)
+        withAnimation(.spring(response: 0.48, dampingFraction: 0.88)) {
+            sendingMessage = message
+            messages.append(message)
+            messageText = ""
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(560))
+            withAnimation(.easeOut(duration: 0.16)) {
+                sendingMessage = nil
+            }
+        }
         // Model inference will be connected in a later milestone.
     }
 }
